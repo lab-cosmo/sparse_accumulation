@@ -13,12 +13,12 @@ torch::Tensor sparse_accumulation_forward(torch::Tensor X1,
     return output; 
 }
 
-std::vector<torch::Tensor> sparse_accumulation_backward(torch::Tensor X1,
-                                  torch::Tensor X2,
-                                  torch::Tensor idx_output,
-                                  int output_size,
-                                  torch::Tensor idx_1,
-                                  torch::Tensor idx_2){
+std::vector<torch::Tensor> sparse_accumulation_backward(torch::Tensor d_output,
+                                                        torch::Tensor X1,
+                                                        torch::Tensor X2,
+                                                        torch::Tensor idx_output,
+                                                        torch::Tensor idx_1,
+                                                        torch::Tensor idx_2){
     
     auto d_X1 = torch::zeros_like(X1);
     auto d_X2 = torch::zeros_like(X2);
