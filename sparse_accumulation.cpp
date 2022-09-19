@@ -47,8 +47,41 @@ std::vector<torch::Tensor> sparse_accumulation_backward(torch::Tensor d_output,
                                                         torch::Tensor idx_2, 
                                                         torch::Tensor multipliers){
     
+    
+    auto X1_a = X1.accessor<float, 3>();
+    auto X2_a = X2.accessor<float, 3>();
+    auto multipliers_a = multipliers.accessor<float, 1>();    
+    
+ 
+    auto d_output_a = d_output.accessor<float, 3>();
+    
+    auto idx_1_a = idx_1.accessor<long, 1>();
+    auto idx_2_a = idx_2.accessor<long, 1>();
+    auto idx_output_a = idx_output.accessor<long, 1>();
+    
     auto d_X1 = torch::zeros_like(X1);
     auto d_X2 = torch::zeros_like(X2);
+    
+    auto d_X1_a = d_X1.accessor<float, 3>();
+    auto d_X2_a = d_X2.accessor<float, 3>();
+    
+    
+    for (int index_first = 0; index_first < d_output_a.size(0); ++index_first){
+        for (int index_second = 0; index_second < d_output_a.size(1); ++index_second) {
+            for (int index = 0; index < idx_output_a.size(0); ++index) {                
+                auto from_X1 = X1_a[index_first][index_second][idx_1_a[index]];
+                auto from_X2 = X2_a[index_first][index_second][idx_2_a[index]];
+                auto multiplier = multipliers_a[index];
+                auto grad = d_output_a[index_first][index_second][idx_output_a[index]];
+                
+                auto to_X1 = multiplier * grad * from_X2;
+                auto to_X2 = multiplier * grad * from_X1;
+                
+                d_X1_a[index_first][index_second][idx_1_a[index]] += to_X1;
+                d_X2_a[index_first][index_second][idx_2_a[index]] += to_X2;
+            }
+        }
+    }
     
     return {d_X1, d_X2};
 }
