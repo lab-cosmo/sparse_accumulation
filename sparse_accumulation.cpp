@@ -7,9 +7,10 @@ torch::Tensor sparse_accumulation_forward(torch::Tensor X1,
                                   torch::Tensor idx_output,
                                   int output_size,
                                   torch::Tensor idx_1,
-                                  torch::Tensor idx_2){
+                                  torch::Tensor idx_2,
+                                  torch::Tensor multipliers){
 
-    auto output = torch::zeros((X1.sizes()[0], X1.sizes()[1], output_size), torch::kF32);
+    auto output = torch::zeros({X1.sizes()[0], X1.sizes()[1], output_size}, torch::kF32);
     return output; 
 }
 
@@ -18,7 +19,8 @@ std::vector<torch::Tensor> sparse_accumulation_backward(torch::Tensor d_output,
                                                         torch::Tensor X2,
                                                         torch::Tensor idx_output,
                                                         torch::Tensor idx_1,
-                                                        torch::Tensor idx_2){
+                                                        torch::Tensor idx_2, 
+                                                        torch::Tensor multipliers){
     
     auto d_X1 = torch::zeros_like(X1);
     auto d_X2 = torch::zeros_like(X2);
