@@ -10,6 +10,13 @@ def sparse_accumulation_loops(X1, X2, idx_output, output_size, idx_1, idx_2, mul
                                                                        
                                                                        
 def sparse_accumulation_index_add(X1, X2, idx_output, output_size, idx_1, idx_2, multipliers):
-    raise NotImplemented("soon")
+    contributions = X1[:, :, idx_1] * X2[:, :, idx_2] * multipliers[None, None, :]
+    device = X1.device #all tensors must be on the same device and blah, blah, blah    
+    output = torch.zeros([X1.shape[0], X2.shape[1], output_size], device = device)
+    output.index_add_(2, idx_output, contributions)
+    return output
+       
+    
+
                                                                        
                                                                        
