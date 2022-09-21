@@ -23,10 +23,9 @@ torch::Tensor sparse_accumulation_active_dim_first_forward(torch::Tensor X1,
     auto idx_2_a = idx_2.accessor<long, 1>();
     auto idx_output_a = idx_output.accessor<long, 1>();
     
-            
-    for (int index_first = 0; index_first < output.size(1); ++index_first){
-        for (int index_second = 0; index_second < output.size(2); ++index_second) {
-            for (int index = 0; index < idx_output_a.size(0); ++index) {     
+    for (int index = 0; index < idx_output_a.size(0); ++index) {            
+        for (int index_first = 0; index_first < output.size(1); ++index_first){
+            for (int index_second = 0; index_second < output.size(2); ++index_second) {             
                 auto first = X1_a[idx_1_a[index]][index_first][index_second];
                 auto second = X2_a[idx_2_a[index]][index_first][index_second];               
                 auto third = multipliers_a[index];  
@@ -65,10 +64,9 @@ std::vector<torch::Tensor> sparse_accumulation_active_dim_first_backward(torch::
     auto d_X1_a = d_X1.accessor<float, 3>();
     auto d_X2_a = d_X2.accessor<float, 3>();
     
-                
-    for (int index_first = 0; index_first < d_output_a.size(1); ++index_first){
-        for (int index_second = 0; index_second < d_output_a.size(2); ++index_second) {
-            for (int index = 0; index < idx_output_a.size(0); ++index) { 
+    for (int index = 0; index < idx_output_a.size(0); ++index) {             
+        for (int index_first = 0; index_first < d_output_a.size(1); ++index_first){
+            for (int index_second = 0; index_second < d_output_a.size(2); ++index_second) {            
                 auto from_X1 = X1_a[idx_1_a[index]][index_first][index_second];
                 auto from_X2 = X2_a[idx_2_a[index]][index_first][index_second];
                 auto multiplier = multipliers_a[index];   
