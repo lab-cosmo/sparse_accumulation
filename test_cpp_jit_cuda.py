@@ -57,8 +57,8 @@ def get_rule_gpu(L_MAX):
 
 def test_forward(epsilon = 1e-10):
     L_MAX = 2
-    BATCH_SIZE = 100
-    N_FEATURES = 10
+    BATCH_SIZE = 5
+    N_FEATURES = 5
     m1_aligned, m2_aligned, mu_aligned, multipliers = get_rule(L_MAX)
     m1_aligned_d, m2_aligned_d, mu_aligned_d, multipliers_d = get_rule_gpu(L_MAX)
     
@@ -67,19 +67,20 @@ def test_forward(epsilon = 1e-10):
     X2 = torch.randn(BATCH_SIZE, N_FEATURES, 2 * L_MAX + 1)
     #X1_d = torch.randn(BATCH_SIZE, N_FEATURES, 2 * L_MAX + 1,device="cuda")
     #X2_d = torch.randn(BATCH_SIZE, N_FEATURES, 2 * L_MAX + 1,device="cuda")
-    X1_d = torch.randn(BATCH_SIZE,device="cuda")
+    X1_d = torch.randn(BATCH_SIZE, N_FEATURES,device="cuda")
     X2_d = torch.randn(BATCH_SIZE,device="cuda")
     
     python_loops_output = sparse_accumulation_loops(X1, X2, mu_aligned, 2 * L_MAX + 1, m1_aligned, m2_aligned, multipliers)
     cuda_output = torch.ops.sparse_accumulation_cuda.forward(X1_d,
                             X2_d,mu_aligned_d, 2 * L_MAX + 1, m1_aligned_d, m2_aligned_d,multipliers_d)
-    #delta = python_loops_output - cpp_output
+    delta = cuda_output[0] - X1_d  
     
-    #relative_error = torch.mean(torch.abs(delta)) / torch.mean(torch.abs(python_loops_output))
+    relative_error = torch.mean(torch.abs(delta))# / torch.mean(torch.abs(python_loops_output))
     print("now I print")
     print('X1 ', X1)
     print('cuda_output ',cuda_output)
     print('X1_d ',X1_d)
+    print(f'{relative_error=}')
 
     #assert relative_error < epsilon
 

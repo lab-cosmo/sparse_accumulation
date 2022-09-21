@@ -10,13 +10,22 @@ template <typename scalar_t>
 __global__ void sparse_accumulation_cuda_forward_kernel(
     scalar_t* __restrict__ output,
     const scalar_t* __restrict__ X1,
-    const int n ) {
-  const int index = blockIdx.x * blockDim.x + threadIdx.x;
-  //printf("hello I am blockIdx %d, blockDim %d, threadIdx %d \n",blockIdx.x , blockDim.x , threadIdx.x);
-  if (index < n) {
-    //printf("hello inside1 loop I am blockIdx %d, blockDim %d, threadIdx %d \n",blockIdx.x , blockDim.x , threadIdx.x);
-    output[index] = X1[index];
-  }
+    const int nx,
+    const int ny ) {
+    
+    int i = threadIdx.x + blockDim.x*blockIdx.x ;
+    int j = threadIdx.y + blockDim.y*blockIdx.y ;
+
+    if (i<nx && j<ny) {
+        int pos = nx*j + i;
+        output[pos] = X1[pos];
+    };
+  // const int index = blockIdx.x * blockDim.x + threadIdx.x;
+  // //printf("hello I am blockIdx %d, blockDim %d, threadIdx %d \n",blockIdx.x , blockDim.x , threadIdx.x);
+  // if (index < n) {
+  //   //printf("hello inside1 loop I am blockIdx %d, blockDim %d, threadIdx %d \n",blockIdx.x , blockDim.x , threadIdx.x);
+  //   output[index] = X1[index];
+  // }
 }
 
 template <typename scalar_t>
@@ -50,20 +59,39 @@ std::vector<torch::Tensor> sparse_accumulation_cuda_forward(
   //auto output = torch::zeros({X1.sizes()[0]}, torch::kF32);  
   auto output = torch::zeros_like(X1);
 
-  const auto batch_size = 10;
+  //const auto batch_size = 10;
+  const auto batch_sizex = output.sizes()[0];
+  const auto batch_sizey = output.sizes()[1];
   //const auto state_size = 1;
 
-  auto n = batch_size ; 
+  auto nx = batch_sizex ; 
+  auto ny = batch_sizey ; 
   auto threads = 124;
-  //const dim3 blocks((state_size + threads - 1) / threads, batch_size);
-  auto blocks = (n+threads-1)/threads;
+  //const dim3 blocks((n+threads-1)/threads, batch_size);
+  //auto blocks = (n+threads-1)/threads;
+
+  //AT_DISPATCH_FLOATING_TYPES(output.type(), "sparse_accumulation_forward_cuda", ([&] {
+  //  sparse_accumulation_cuda_forward_kernel<scalar_t><<<blocks, threads>>>(
+  //      output.data<scalar_t>(),
+  //      X1.data<scalar_t>(),
+  //      n1,
+  //      n2,
+  //      );
+  //}));
+
+  auto find_num_blocks = [](int x, int bdim) {return (x+bdim-1)/bdim;};
+  dim3 block_dim(16, 16);
+  int nbx = find_num_blocks(nx, block_dim.x);
+  int nby = find_num_blocks(ny, block_dim.y);
+  dim3 grid_dim(nbx, nby);
 
   AT_DISPATCH_FLOATING_TYPES(output.type(), "sparse_accumulation_forward_cuda", ([&] {
-    sparse_accumulation_cuda_forward_kernel<scalar_t><<<blocks, threads>>>(
-        output.data<scalar_t>(),
-        X1.data<scalar_t>(),
-        n
-        );
+  sparse_accumulation_cuda_forward_kernel<scalar_t><<<grid_dim, block_dim>>>(
+      output.data<scalar_t>(),
+      X1.data<scalar_t>(),
+      nx,
+      ny
+      );
   }));
 
   return {output};
