@@ -20,43 +20,45 @@ __global__ void sparse_accumulation_cuda_forward_kernel(
     const int X2_third_size,
     const int nx,
     const int ny,
-    const int nz ) {
+    const int nz) {
     
     int i = threadIdx.x + blockDim.x * blockIdx.x ;
     int j = threadIdx.y + blockDim.y * blockIdx.y ;
-    int z = threadIdx.z + blockDim.z * blockIdx.z ;
+    //int z = threadIdx.z + blockDim.z * blockIdx.z ;
 
     //if (i<nx && j<ny && z<nz) {
     //    int pos = nx*ny*z + nx*j + i;
     //    output[pos] = X1[pos];
     //};
 
-    if (i<nx && j<ny && z<nz) {
-      int z_output = idx_output[z];
-      int z_X1 = idx_1[z] ;
-      int z_X2 = idx_2[z] ;
-      //int pos = nx*ny*z + nx*j + i;
-      int pos_X1 = nx*ny*z_X1 + nx*j + i ;
-      int pos_X2 = nx*ny*z_X2 + nx*j + i ;
-      int pos_output = nx*ny*z_output + nx*j+  i ;
+    if (i<nx && j<ny) {
+      for (auto z = 0 ; z < nz ; ++z){
+        int z_output = idx_output[z];
+        int z_X1 = idx_1[z] ;
+        int z_X2 = idx_2[z] ;
+        //int pos = nx*ny*z + nx*j + i;
+        //int pos_X1 = nx*ny*z_X1 + nx*j + i ;
+        //int pos_X2 = nx*ny*z_X2 + nx*j + i ;
+        //int pos_output = nx*ny*z_output + nx*j+  i ;
 
-      //int pos_X1 = z_X1 + j*X1_third_size + i*ny*X1_third_size ;
-      //int pos_output = z_output+ j*output_size+  i*output_size*ny ;
-      //int pos_X2 = z_X2 + j*X2_third_size + i*ny*X2_third_size ;
-      //printf("z_output %d \n",z_output) ;
-      //printf("z_X1 %d \n",z_X1);
-      //printf("z_X2 %d \n",z_X2);
-      //printf("pos_X1 %d \n",pos_X1);
-      //printf("pos_x2 %d \n",pos_X1);
-      //printf("pos_output %d \n X1 %f \n X2 %f \n",pos_output,X1[pos_X1],X2[pos_X2]);
-      //printf("X1 %f \n",X1[pos_X1]);
-      //printf("X2 %f \n",X2[pos_X2]);
-      printf("multipliers %f \n",multipliers[z]);
-      output[pos_output] += X1[pos_X1]*X2[pos_X2]*multipliers[z];
-      __syncthreads();
-      
-      printf("pos_output %d \n",pos_output);
-      printf("z %d \n",z);
+        int pos_X1 = z_X1 + j*X1_third_size + i*ny*X1_third_size ;
+        int pos_output = z_output+ j*output_size+  i*output_size*ny ;
+        int pos_X2 = z_X2 + j*X2_third_size + i*ny*X2_third_size ;
+        //printf("z_output %d \n",z_output) ;
+        //printf("z_X1 %d \n",z_X1);
+        //printf("z_X2 %d \n",z_X2);
+        //printf("pos_X1 %d \n",pos_X1);
+        //printf("pos_x2 %d \n",pos_X1);
+        //printf("pos_output %d \n X1 %f \n X2 %f \n",pos_output,X1[pos_X1],X2[pos_X2]);
+        //printf("X1 %f \n",X1[pos_X1]);
+        //printf("X2 %f \n",X2[pos_X2]);
+        //printf(" i use 2 \n multipliers %f \n",multipliers[z]);
+        output[pos_output] += X1[pos_X1]*X2[pos_X2]*multipliers[z];
+        //__syncthreads();
+
+        //printf("pos_output %d \n",pos_output);
+        //printf("z %d \n",z);
+      };
       //output[pos_output] += 1; //multipliers[z];
     };
     //for (int index_first = 0; index_first < output.size(0); ++index_first){
@@ -135,11 +137,11 @@ std::vector<torch::Tensor> sparse_accumulation_cuda_forward(
   //}));
 
   auto find_num_blocks = [](int x, int bdim) {return (x+bdim-1)/bdim;};
-  dim3 block_dim(16, 4,4);
+  dim3 block_dim(16, 16);
   int nbx = find_num_blocks(nx, block_dim.x);
   int nby = find_num_blocks(ny, block_dim.y);
   int nbz = find_num_blocks(nz, block_dim.z);
-  dim3 grid_dim(nbx, nby, nbz);
+  dim3 grid_dim(nbx, nby);
 
   AT_DISPATCH_FLOATING_TYPES(output.type(), "sparse_accumulation_forward_cuda", ([&] {
   sparse_accumulation_cuda_forward_kernel<scalar_t><<<grid_dim, block_dim>>>(
