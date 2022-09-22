@@ -1,7 +1,7 @@
 import torch
 from clebsch_gordan import get_real_clebsch_gordan, ClebschGordan
 from sparse_accumulation_plain_torch import sparse_accumulation_loops
-import sparse_accumulation, sparse_accumulation_active_dim_first
+import sparse_accumulation, sparse_accumulation_active_dim_first, sparse_accumulation_active_dim_middle
 
 
 def get_rule(L_MAX):
@@ -24,7 +24,7 @@ def get_rule(L_MAX):
     
     return m1_aligned, m2_aligned, mu_aligned, multipliers
 
-def test_forward(epsilon = 1e-10):
+def test_forward(epsilon = 1e-7):
     L_MAX = 5
     BATCH_SIZE = 1000
     N_FEATURES = 100
@@ -35,7 +35,8 @@ def test_forward(epsilon = 1e-10):
     X2 = torch.randn(BATCH_SIZE, N_FEATURES, 2 * L_MAX + 1)
 
     
-    python_loops_output = sparse_accumulation_loops(X1, X2, mu_aligned, 2 * L_MAX + 1, m1_aligned, m2_aligned, multipliers)
+    python_loops_output = sparse_accumulation_loops(X1, X2, mu_aligned, 2 * L_MAX + 1, m1_aligned, m2_aligned, multipliers,
+                                                    active_dim = 2)
     cpp_output = sparse_accumulation.SparseAccumulation.apply(X1, X2, mu_aligned,
                                                           2 * L_MAX + 1, m1_aligned, m2_aligned, multipliers)
     delta = python_loops_output - cpp_output
@@ -44,7 +45,7 @@ def test_forward(epsilon = 1e-10):
     assert  relative_error < epsilon
     
     
-def test_forward_active_dim_first(epsilon = 1e-10):
+def test_forward_active_dim_first(epsilon = 1e-7):
     L_MAX = 5
     BATCH_SIZE = 1000
     N_FEATURES = 100
@@ -56,8 +57,28 @@ def test_forward_active_dim_first(epsilon = 1e-10):
 
     
     python_loops_output = sparse_accumulation_loops(X1, X2, mu_aligned, 2 * L_MAX + 1, m1_aligned, m2_aligned, multipliers,
-                                                    active_dimension_first = True)
+                                                    active_dim = 0)
     cpp_output = sparse_accumulation_active_dim_first.SparseAccumulationActiveDimFirst.apply(X1, X2, mu_aligned,
+                                                          2 * L_MAX + 1, m1_aligned, m2_aligned, multipliers)
+    delta = python_loops_output - cpp_output
+    
+    relative_error = torch.mean(torch.abs(delta)) / torch.mean(torch.abs(python_loops_output))
+    assert  relative_error < epsilon
+    
+def test_forward_active_dim_middle(epsilon = 1e-7):
+    L_MAX = 5
+    BATCH_SIZE = 1000
+    N_FEATURES = 100
+    m1_aligned, m2_aligned, mu_aligned, multipliers = get_rule(L_MAX)
+    
+    
+    X1 = torch.randn(BATCH_SIZE, 2 * L_MAX + 1, N_FEATURES)
+    X2 = torch.randn(BATCH_SIZE, 2 * L_MAX + 1, N_FEATURES)
+
+    
+    python_loops_output = sparse_accumulation_loops(X1, X2, mu_aligned, 2 * L_MAX + 1, m1_aligned, m2_aligned, multipliers,
+                                                    active_dim = 1)
+    cpp_output = sparse_accumulation_active_dim_middle.SparseAccumulationActiveDimMiddle.apply(X1, X2, mu_aligned,
                                                           2 * L_MAX + 1, m1_aligned, m2_aligned, multipliers)
     delta = python_loops_output - cpp_output
     
@@ -82,7 +103,8 @@ def test_backward(epsilon = 1e-7):
 
     X1.requires_grad = True
     X2.requires_grad = True
-    python_loops_output = sparse_accumulation_loops(X1, X2, mu_aligned, 2 * L_MAX + 1, m1_aligned, m2_aligned, multipliers)
+    python_loops_output = sparse_accumulation_loops(X1, X2, mu_aligned, 2 * L_MAX + 1, m1_aligned, m2_aligned, multipliers, 
+                                                   active_dim = 2)
     output_grad = torch.randn(*python_loops_output.shape)
     python_loops_output.backward(gradient = output_grad)
     
@@ -94,6 +116,41 @@ def test_backward(epsilon = 1e-7):
 
     cpp_output = sparse_accumulation.SparseAccumulation.apply(X1, X2, mu_aligned,
                                                           2 * L_MAX + 1, m1_aligned, m2_aligned, multipliers)
+    cpp_output.backward(gradient = output_grad)
+
+    X1_grad_cpp = torch.detach(torch.clone(X1.grad))
+    X2_grad_cpp = torch.detach(torch.clone(X2.grad))
+    
+    assert get_relative_error(X1_grad_python_loops, X1_grad_cpp) < epsilon
+    assert get_relative_error(X2_grad_python_loops, X2_grad_cpp) < epsilon
+    
+
+def test_backward_active_dim_middle(epsilon = 1e-7):
+    L_MAX = 5
+    BATCH_SIZE = 1000
+    N_FEATURES = 100
+    m1_aligned, m2_aligned, mu_aligned, multipliers = get_rule(L_MAX)
+  
+    X1 = torch.randn(BATCH_SIZE, 2 * L_MAX + 1, N_FEATURES)
+    X2 = torch.randn(BATCH_SIZE, 2 * L_MAX + 1, N_FEATURES)
+
+    X1.requires_grad = True
+    X2.requires_grad = True
+    python_loops_output = sparse_accumulation_loops(X1, X2, mu_aligned, 2 * L_MAX + 1, m1_aligned, m2_aligned, multipliers,
+                                                    active_dim = 1)
+   
+    output_grad = torch.randn(*python_loops_output.shape)
+    python_loops_output.backward(gradient = output_grad)
+    
+    X1_grad_python_loops = torch.detach(torch.clone(X1.grad))
+    X2_grad_python_loops = torch.detach(torch.clone(X2.grad))
+
+    X1.grad.zero_()
+    X2.grad.zero_()
+
+    cpp_output = sparse_accumulation_active_dim_middle.SparseAccumulationActiveDimMiddle.apply(X1, X2, mu_aligned,
+                                                          2 * L_MAX + 1, m1_aligned, m2_aligned, multipliers)
+    
     cpp_output.backward(gradient = output_grad)
 
     X1_grad_cpp = torch.detach(torch.clone(X1.grad))
@@ -116,7 +173,7 @@ def test_backward_active_dim_first(epsilon = 1e-7):
     X2.requires_grad = True
     python_loops_output = sparse_accumulation_loops(X1, X2, mu_aligned, 2 * L_MAX + 1,
                                                     m1_aligned, m2_aligned, multipliers,
-                                                    active_dimension_first = True)
+                                                    active_dim = 0)
     output_grad = torch.randn(*python_loops_output.shape)
     python_loops_output.backward(gradient = output_grad)
     
