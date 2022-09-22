@@ -26,9 +26,9 @@ std::vector<torch::Tensor> sparse_accumulation_contiguous_backward(torch::Tensor
     long* idx_2_ptr = idx_2.data_ptr<long>();
     long* idx_output_ptr = idx_output.data_ptr<long>();
     
-    auto active_size = idx_output.sizes()[0];
-    auto first_size = X1.sizes()[0];
-    auto second_size = X1.sizes()[1];        
+    long active_size = idx_output.sizes()[0];
+    long first_size = X1.sizes()[0];
+    long second_size = X1.sizes()[1];        
     
     long output_active_dim = d_output.sizes()[2];
     long X1_active_dim = X1.sizes()[2];

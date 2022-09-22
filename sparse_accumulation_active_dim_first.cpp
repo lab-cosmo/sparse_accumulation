@@ -27,15 +27,15 @@ std::vector<torch::Tensor> sparse_accumulation_active_dim_first_contiguous_backw
     long* idx_2_ptr = idx_2.data_ptr<long>();
     long* idx_output_ptr = idx_output.data_ptr<long>();
     
-    auto active_size = idx_output.sizes()[0];
-    auto first_size = X1.sizes()[1];
-    auto second_size = X1.sizes()[2];
-        
+    long active_size = idx_output.sizes()[0];
+    long first_size = X1.sizes()[1];
+    long second_size = X1.sizes()[2];
+    long inner_size = first_size * second_size;
     
     for (int index = 0; index < active_size; ++index) {
-        long shift_active_x1 = idx_1_ptr[index] * first_size * second_size;
-        long shift_active_x2 = idx_2_ptr[index] * first_size * second_size;
-        long shift_active_output = idx_output_ptr[index] * first_size * second_size;
+        long shift_active_x1 = idx_1_ptr[index] * inner_size;
+        long shift_active_x2 = idx_2_ptr[index] * inner_size;
+        long shift_active_output = idx_output_ptr[index] * inner_size;
         float multiplier = multipliers_ptr[index];
         float grad;
         long shift_local = 0;
@@ -69,14 +69,15 @@ torch::Tensor sparse_accumulation_active_dim_first_contiguous_forward(torch::Ten
     long* idx_2_ptr = idx_2.data_ptr<long>();
     long* idx_output_ptr = idx_output.data_ptr<long>();
     
-    auto active_size = idx_output.sizes()[0];
-    auto first_size = X1.sizes()[1];
-    auto second_size = X1.sizes()[2];
+    long active_size = idx_output.sizes()[0];
+    long first_size = X1.sizes()[1];
+    long second_size = X1.sizes()[2];
+    long inner_size = first_size * second_size;
     
     for (int index = 0; index < active_size; ++index) {
-        long shift_active_x1 = idx_1_ptr[index] * first_size * second_size;
-        long shift_active_x2 = idx_2_ptr[index] * first_size * second_size;
-        long shift_active_output = idx_output_ptr[index] * first_size * second_size;
+        long shift_active_x1 = idx_1_ptr[index] * inner_size;
+        long shift_active_x2 = idx_2_ptr[index] * inner_size;
+        long shift_active_output = idx_output_ptr[index] * inner_size;
         float third = multipliers_ptr[index];
         
         long shift_local = 0;
