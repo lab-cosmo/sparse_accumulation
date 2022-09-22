@@ -24,7 +24,7 @@ def get_rule(L_MAX):
     
     return m1_aligned, m2_aligned, mu_aligned, multipliers
 
-def test_forward(epsilon = 1e-10):
+def test_forward(epsilon = 1e-7):
     L_MAX = 5
     BATCH_SIZE = 1000
     N_FEATURES = 100
@@ -44,7 +44,7 @@ def test_forward(epsilon = 1e-10):
     assert  relative_error < epsilon
     
     
-def test_forward_active_dim_first(epsilon = 1e-10):
+def test_forward_active_dim_first(epsilon = 1e-7):
     L_MAX = 5
     BATCH_SIZE = 1000
     N_FEATURES = 100
