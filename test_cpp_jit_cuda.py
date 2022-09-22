@@ -77,7 +77,8 @@ def test_forward(L_MAX,BATCH_SIZE,N_FEATURES,atol = 1e-7):
     #print(f"{X2_d.transpose(0,1).stride()=}")
     
     t1 = time()
-    python_loops_output = sparse_accumulation_loops(X1, X2, mu_aligned, 2 * L_MAX + 1, m1_aligned, m2_aligned, multipliers,active_dim=2)
+    python_loops_output = sparse_accumulation_loops(X1, X2, mu_aligned, 2 * L_MAX + 1, 
+                                                    m1_aligned, m2_aligned, multipliers,active_dim=2)
     t2 = time()
     python_time = t2-t1
     torch.cuda.synchronize('cuda')
@@ -108,7 +109,7 @@ def test_forward(L_MAX,BATCH_SIZE,N_FEATURES,atol = 1e-7):
     #print(f'{multipliers_d=} ')
     #print('X1_d ',X1_d)
     #print(f'{python_loops_output=}')
-    print(f'{L_MAX=}, {BATCH_SIZE=}, {N_FEATURES=}')
+    print(f'forward {L_MAX=}, {BATCH_SIZE=}, {N_FEATURES=}')
     print(f'{relative_error=}')
     
     assertion = torch.allclose(python_loops_output , cuda_output_cpu,atol=atol)
@@ -125,11 +126,83 @@ def test_forward(L_MAX,BATCH_SIZE,N_FEATURES,atol = 1e-7):
 
 
     #assert relative_error < epsilon
+def test_backward(L_MAX,BATCH_SIZE,N_FEATURES,atol = 1e-7):
+    
+    m1_aligned, m2_aligned, mu_aligned, multipliers = get_rule(L_MAX)
+    m1_aligned_d = m1_aligned.clone().cuda()
+    m2_aligned_d = m2_aligned.clone().cuda()
+    mu_aligned_d = mu_aligned.clone().cuda()
+    multipliers_d = multipliers.clone().cuda()
+    generator = torch.Generator()
+    generator.manual_seed(30)
+    X1 = torch.randn((BATCH_SIZE, N_FEATURES, 2 * L_MAX + 1),generator=generator)
+    X2 = torch.randn((BATCH_SIZE, N_FEATURES, 2 * L_MAX + 1),generator=generator)
+    #X1_d = torch.randn(BATCH_SIZE, N_FEATURES, 2 * L_MAX + 1,device="cuda")
+    #X2_d = torch.randn(BATCH_SIZE, N_FEATURES, 2 * L_MAX + 1,device="cuda")
+    X1_d = X1.clone().cuda() # torch.randn(BATCH_SIZE, N_FEATURES,device="cuda")
+    X2_d = X2.clone().cuda() # torch.randn(BATCH_SIZE,device="cuda")
+
+    X1.requires_grad = True
+    X2.requires_grad = True
+    t1 = time()
+    
+    python_loops_output = sparse_accumulation_loops(X1, X2, mu_aligned,2 * L_MAX + 1, 
+                                                    m1_aligned, m2_aligned, multipliers, active_dim = 2)
+    output_grad = torch.randn(*python_loops_output.shape)
+    python_loops_output.backward(gradient = output_grad)
+    
+    X1_grad_python_loops = torch.detach(torch.clone(X1.grad))
+    X2_grad_python_loops = torch.detach(torch.clone(X2.grad))
+
+    t2 = time()
+    python_time = t2-t1
+    output_grad_d = output_grad.clone().cuda()
+    
+    torch.cuda.synchronize('cuda')
+    starter, ender = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
+    starter.record()
+    cuda_output = torch.ops.sparse_accumulation_cuda.backward(output_grad_d,X1_d,X2_d,mu_aligned_d, 
+                                                             m1_aligned_d, m2_aligned_d,multipliers_d)
+    torch.cuda.synchronize('cuda')
+    ender.record()
+    torch.cuda.synchronize('cuda')
+    cuda_Event_time = starter.elapsed_time(ender)/1000 # torch.cuda.Event gives the time in milliseconds
+    t3 = time()
+    cuda_time = t3-t2
+    X1_grad_cuda = cuda_output[0].cpu()
+    X2_grad_cuda = cuda_output[1].cpu()
+    #cpp_output = sparse_accumulation.SparseAccumulation.apply(X1, X2, mu_aligned,
+    #                                                      2 * L_MAX + 1, m1_aligned, 
+    #cpp_output.backward(gradient = output_grad)
+
+    #X1_grad_cpp = torch.detach(torch.clone(X1.grad))
+    #X2_grad_cpp = torch.detach(torch.clone(X2.grad))
+    
+    #assert get_relative_error(X1_grad_python_loops, X1_grad_cuda) < epsilon
+    #assert get_relative_error(X2_grad_python_loops, X2_grad_cuda) < epsilon
+    print(f'backward {L_MAX=}, {BATCH_SIZE=}, {N_FEATURES=}')
+    
+    assertion1 = torch.allclose(X1_grad_python_loops, X1_grad_cuda,atol=atol)
+    assertion2 = torch.allclose(X2_grad_python_loops, X2_grad_cuda,atol=atol)
+    if((not assertion1) or (not assertion2)):
+        print("assertion failed")
+        errmax1 = torch.amax(torch.abs(X1_grad_python_loops-X1_grad_cuda))
+        errmax2 = torch.amax(torch.abs(X2_grad_python_loops-X2_grad_cuda))
+        print(f'{errmax1=}')
+        print(f'{errmax2=}')
+    #assert torch.allclose(python_loops_output , cuda_output_cpu,atol=atol)
+    print(f'{python_time=} s' )
+    print(f'{cuda_time=} s')
+    print(f'{cuda_Event_time=} s')
+    print(f'python_time/cuda_time = {python_time/cuda_time} ')
+    print()
 
 
 if __name__ =="__main__" : 
-    test_forward(L_MAX=5,BATCH_SIZE=20,N_FEATURES=20)
-    test_forward(L_MAX=5,BATCH_SIZE=2000,N_FEATURES=105)
-    test_forward(L_MAX=10,BATCH_SIZE=2000,N_FEATURES=105)
+    test_forward(L_MAX=5,BATCH_SIZE=20,N_FEATURES=20,atol = 1e-7)
+    test_forward(L_MAX=5,BATCH_SIZE=2000,N_FEATURES=105,atol = 1e-6)
+    test_forward(L_MAX=10,BATCH_SIZE=2000,N_FEATURES=105,atol = 1e-5)
     #test_forward(L_MAX=50,BATCH_SIZE=10,N_FEATURES=10)
+    test_backward(L_MAX=5,BATCH_SIZE=20,N_FEATURES=20,atol = 1e-6)
+    test_backward(L_MAX=5,BATCH_SIZE=2000,N_FEATURES=105,atol = 1e-6)
 

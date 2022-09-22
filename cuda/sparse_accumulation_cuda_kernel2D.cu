@@ -82,20 +82,40 @@ __global__ void sparse_accumulation_cuda_forward_kernel(
 
 template <typename scalar_t>
 __global__ void sparse_accumulation_cuda_backward_kernel(
+    scalar_t* __restrict__ d_X1,
+    scalar_t* __restrict__ d_X2,
+    const scalar_t* __restrict__ d_output,
     const scalar_t* __restrict__ X1,
     const scalar_t* __restrict__ X2,
-    scalar_t* __restrict__ d_X1,
-    scalar_t* __restrict__ d_X2
+    const int64_t* __restrict__ idx_output,
+    const int64_t* __restrict__ idx_1,
+    const int64_t* __restrict__ idx_2,
+    const scalar_t* __restrict__ multipliers,
+    const int output_size,
+    const int X1_third_size,
+    const int X2_third_size,
+    const int nx,
+    const int ny,
+    const int nz
     ) {
-  const int state_size = 100 ; 
-  const int column = blockIdx.x * blockDim.x + threadIdx.x;
-  const int index = blockIdx.y * state_size + column;
-  const int gates_row = blockIdx.y * (state_size * 3);
-  if (column < state_size) {
-    d_X1[index] = X1[column];
-    d_X2[index] = X2[column];
+    int i = threadIdx.x + blockDim.x * blockIdx.x ;
+    int j = threadIdx.y + blockDim.y * blockIdx.y ;
+
+    if (i<nx && j<ny) {
+      for (auto z = 0 ; z < nz ; ++z){
+        int z_output = idx_output[z];
+        int z_X1 = idx_1[z] ;
+        int z_X2 = idx_2[z] ;
+
+        int pos_X1 = z_X1 + j*X1_third_size + i*ny*X1_third_size ;
+        int pos_output = z_output+ j*output_size+  i*output_size*ny ;
+        int pos_X2 = z_X2 + j*X2_third_size + i*ny*X2_third_size ;
+        auto grad_multi = d_output[pos_output] * multipliers[z];
+        d_X1[pos_X1] += grad_multi*X2[pos_X2]; 
+        d_X2[pos_X2] += grad_multi*X1[pos_X1];
+      };
+    };
   }
-    }
 
 
 std::vector<torch::Tensor> sparse_accumulation_cuda_forward(
@@ -175,18 +195,38 @@ std::vector<torch::Tensor> sparse_accumulation_cuda_backward(
     auto d_X1 = torch::zeros_like(X1);
     auto d_X2 = torch::zeros_like(X2); 
 
-    const auto batch_size = 2;
-    const auto state_size = 1;
+    auto X1_third_size = X1.sizes()[2]; 
+    auto X2_third_size = X2.sizes()[2]; 
+    const auto nx = d_output.sizes()[0]    ;
+    const auto ny = d_output.sizes()[1]    ;
+    const auto output_size = d_output.sizes()[2] ;
+    const auto nz = idx_output.sizes()[0];
 
-    const int threads = 1024;
-    const dim3 blocks((state_size + threads - 1) / threads, batch_size);
+    auto find_num_blocks = [](int x, int bdim) {return (x+bdim-1)/bdim;};
+    dim3 block_dim(16, 16);
+    int nbx = find_num_blocks(nx, block_dim.x);
+    int nby = find_num_blocks(ny, block_dim.y);
+    dim3 grid_dim(nbx, nby);
 
-    AT_DISPATCH_FLOATING_TYPES(d_X1.type(), "sparse_accumulation_backward_cuda", ([&] {
-      sparse_accumulation_cuda_backward_kernel<scalar_t><<<blocks, threads>>>(
+
+
+    AT_DISPATCH_FLOATING_TYPES(X1.type(), "sparse_accumulation_backward_cuda", ([&] {
+      sparse_accumulation_cuda_backward_kernel<scalar_t><<<grid_dim, block_dim>>>(
+        d_X1.data<scalar_t>(),
+        d_X2.data<scalar_t>(),
+        d_output.data<scalar_t>(),
         X1.data<scalar_t>(),
         X2.data<scalar_t>(),
-        d_X1.data<scalar_t>(),
-        d_X2.data<scalar_t>()
+        idx_output.data<int64_t>(),
+        idx_1.data<int64_t>(),
+        idx_2.data<int64_t>(),
+        multipliers.data<scalar_t>(),
+        output_size,
+        X1_third_size,
+        X2_third_size,
+        nx,
+        ny,
+        nz
         );
     }));
     return {d_X1, d_X2};
