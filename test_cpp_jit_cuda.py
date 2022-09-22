@@ -78,7 +78,7 @@ def test_forward(epsilon = 1e-10):
     print(f"{X2_d.stride()=}")
     print(f"{X2_d.transpose(0,1).stride()=}")
     
-    python_loops_output = sparse_accumulation_loops(X1, X2, mu_aligned, 2 * L_MAX + 1, m1_aligned, m2_aligned, multipliers)
+    python_loops_output = sparse_accumulation_loops(X1, X2, mu_aligned, 2 * L_MAX + 1, m1_aligned, m2_aligned, multipliers,active_dim=2)
     cuda_output = torch.ops.sparse_accumulation_cuda.forward(X1_d,
                             X2_d,mu_aligned_d, 2 * L_MAX + 1, m1_aligned_d, m2_aligned_d,multipliers_d)
     #delta = cuda_output[0] - X1_d  
