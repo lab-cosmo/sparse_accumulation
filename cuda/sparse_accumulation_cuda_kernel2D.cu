@@ -118,7 +118,6 @@ std::vector<torch::Tensor> sparse_accumulation_cuda_forward(
   const auto batch_sizex = output.sizes()[0];
   const auto batch_sizey = output.sizes()[1];
   const auto batch_sizez = idx_output.sizes()[0];
-  printf("idx_output.sizes()[0] %d \n",idx_output.sizes()[0]);
 
   auto nx = batch_sizex ; 
   auto ny = batch_sizey ; 
