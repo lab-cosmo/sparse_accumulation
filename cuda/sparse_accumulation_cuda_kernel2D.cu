@@ -32,7 +32,8 @@ __global__ void sparse_accumulation_cuda_forward_kernel(
     //};
 
     if (i<nx && j<ny) {
-      for (auto z = 0 ; z < nz ; ++z){
+      //printf("in kernel i %d  j %d\n",i,j) ;
+      for (int z = 0 ; z < nz ; ++z){
         int z_output = idx_output[z];
         int z_X1 = idx_1[z] ;
         int z_X2 = idx_2[z] ;
@@ -49,6 +50,7 @@ __global__ void sparse_accumulation_cuda_forward_kernel(
         //printf("z_X2 %d \n",z_X2);
         //printf("pos_X1 %d \n",pos_X1);
         //printf("pos_x2 %d \n",pos_X1);
+       //printf("pos_output %d  X1 %f  X2 %f  z %d  multipliers[z] %f \n",pos_output,X1[pos_X1],X2[pos_X2],z,multipliers[z]);
         //printf("pos_output %d \n X1 %f \n X2 %f \n",pos_output,X1[pos_X1],X2[pos_X2]);
         //printf("X1 %f \n",X1[pos_X1]);
         //printf("X2 %f \n",X2[pos_X2]);
