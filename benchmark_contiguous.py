@@ -5,7 +5,15 @@ from clebsch_gordan import get_real_clebsch_gordan, ClebschGordan
 from sparse_accumulation_plain_torch import sparse_accumulation_loops, sparse_accumulation_index_add
 import sparse_accumulation, sparse_accumulation_active_dim_first,  sparse_accumulation_active_dim_middle
 import numpy as np
+from torch.utils import cpp_extension
 
+cpp_extension.load(
+    name="sparse_accumulation_cuda",
+    sources=["cuda/sparse_accumulation_cuda_kernel2D.cu"],
+    is_python_module=False,
+    extra_cuda_cflags=None,
+    verbose=True,
+)
 
 L_MAX = 8
 BATCH_SIZE = 1000
@@ -113,6 +121,28 @@ def benchmark_backward_gpu(BATCH_SIZE, N_FEATURES, active_dim, function, n_trial
     return np.array(times)
 
 
+def benchmark_backward_gpu_cuda(BATCH_SIZE, N_FEATURES, active_dim, function, n_trials):
+    X1, X2 = get_input(BATCH_SIZE, N_FEATURES, active_dim, 'cuda')
+        
+    X1.requires_grad = True
+    X2.requires_grad = True
+    times = []
+    
+    torch.cuda.synchronize('cuda')
+    starter, ender = torch.cuda.Event(enable_timing=True), torch.cuda.Event(
+        enable_timing=True)    
+    
+    for _ in range(n_trials):
+        starter.record()
+        output = function(torch.ones((X1.size()[0], X1.size()[1], 2 * L_MAX + 1),dtype=X1.dtype,device='cuda'),X1, X2, mu_aligned,  m1_aligned, m2_aligned, multipliers)
+        #output.backward(gradient=torch.ones_like(output))
+        ender.record()
+        torch.cuda.synchronize('cuda')
+        delta_time = starter.elapsed_time(ender)
+        times.append(delta_time / 1000.0)  
+    return np.array(times)
+
+
 # In[5]:
 
 
@@ -153,6 +183,20 @@ print("torch index_add_; active dim 1; forward; cuda: ", np.mean(times[1:]))
                           sparse_accumulation_active_dim_middle.SparseAccumulationActiveDimMiddle.apply, 10)
 print("cpp; active dim 1; forward: ", np.mean(times[1:]))'''
 
+
+print()
+times = benchmark_forward_gpu(BATCH_SIZE, N_FEATURES, 2, 
+                          get_func_fixed_dim(sparse_accumulation_loops, 2), 1)
+print("python loops first; active dim 2; forward; cuda: ", np.mean(times))
+times = benchmark_forward_gpu(BATCH_SIZE, N_FEATURES, 2,
+                          get_func_fixed_dim(sparse_accumulation_index_add, 2), 1)
+print("torch index_add_ first; active dim 2; forward; cuda: ", np.mean(times))
+times = benchmark_forward_gpu(BATCH_SIZE, N_FEATURES, 2, 
+                          torch.ops.sparse_accumulation_cuda.forward, 1)
+print("CUDA kernel first; active dim 2; forward; cuda: ", np.mean(times))
+'''times = benchmark_forward(BATCH_SIZE, N_FEATURES, 2, sparse_accumulation.SparseAccumulation.apply, 10)
+print("cpp; active dim 2; forward: ", np.mean(times[1:]))'''
+
 print()
 times = benchmark_forward_gpu(BATCH_SIZE, N_FEATURES, 2, 
                           get_func_fixed_dim(sparse_accumulation_loops, 2), 10)
@@ -160,9 +204,11 @@ print("python loops; active dim 2; forward; cuda: ", np.mean(times[1:]))
 times = benchmark_forward_gpu(BATCH_SIZE, N_FEATURES, 2,
                           get_func_fixed_dim(sparse_accumulation_index_add, 2), 10)
 print("torch index_add_; active dim 2; forward; cuda: ", np.mean(times[1:]))
+times = benchmark_forward_gpu(BATCH_SIZE, N_FEATURES, 2, 
+                          torch.ops.sparse_accumulation_cuda.forward, 10)
+print("CUDA kernel; active dim 2; forward; cuda: ", np.mean(times[1:]))
 '''times = benchmark_forward(BATCH_SIZE, N_FEATURES, 2, sparse_accumulation.SparseAccumulation.apply, 10)
 print("cpp; active dim 2; forward: ", np.mean(times[1:]))'''
-
 
 # In[10]:
 
@@ -197,6 +243,9 @@ print("python loops; active dim 2; backward; cuda: ", np.mean(times[1:]))
 times = benchmark_backward_gpu(BATCH_SIZE, N_FEATURES, 2, 
                            get_func_fixed_dim(sparse_accumulation_index_add, 2), 10)
 print("torch index_add_; active dim 2; backward; cuda: ", np.mean(times[1:]))
+times = benchmark_backward_gpu_cuda(BATCH_SIZE, N_FEATURES, 2, 
+                          torch.ops.sparse_accumulation_cuda.backward, 10)
+print("CUDA kernel; active dim 2; backward; cuda: ", np.mean(times[1:]))
 '''times = benchmark_backward(BATCH_SIZE, N_FEATURES, 2, sparse_accumulation.SparseAccumulation.apply, 10)
 print("cpp; active dim 2; backward: ", np.mean(times[1:]))'''
 

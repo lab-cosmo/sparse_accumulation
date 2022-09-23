@@ -177,8 +177,6 @@ def test_backward(L_MAX,BATCH_SIZE,N_FEATURES,atol = 1e-7,rtol=1e-8):
     
     assertion1 = torch.allclose(X1_grad_python_loops, X1_grad_cuda,atol=atol,rtol=rtol)
     assertion2 = torch.allclose(X2_grad_python_loops, X2_grad_cuda,atol=atol,rtol=rtol)
-    if((not assertion1) or (not assertion2)):
-        print("assertion failed")
     errmax1 = torch.amax(torch.abs(X1_grad_python_loops-X1_grad_cuda))
     errmax2 = torch.amax(torch.abs(X2_grad_python_loops-X2_grad_cuda))
     print(f'{errmax1=}')
@@ -190,6 +188,8 @@ def test_backward(L_MAX,BATCH_SIZE,N_FEATURES,atol = 1e-7,rtol=1e-8):
     print(f'{cuda_time=} s')
     print(f'{cuda_Event_time=} s')
     print(f'python_time/cuda_time = {python_time/cuda_time} ')
+    if((not assertion1) or (not assertion2)):
+        print("!! assertion FAILED")
     print()
 
 
