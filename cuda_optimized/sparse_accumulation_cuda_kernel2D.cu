@@ -6,7 +6,7 @@
 #include <iostream>
 using namespace torch::indexing;
 
-#define BLOCK_SIZE 16
+#define BLOCK_SIZE 8
 
 template <typename scalar_t >
 __global__ void sparse_accumulation_cuda_forward_kernel(
@@ -23,12 +23,26 @@ __global__ void sparse_accumulation_cuda_forward_kernel(
     const int nx,
     const int ny,
     const int nz) {
-    
-    extern __shared__ float buffer_output[];
 
-    int i = threadIdx.x + blockDim.x * blockIdx.x ;
-    int j = threadIdx.y + blockDim.y * blockIdx.y ;
-    //int z = threadIdx.z + blockDim.z * blockIdx.z ;
+
+    extern __shared__ float buffer_output[];
+    float* buffer_X1 = buffer_output + BLOCK_SIZE * BLOCK_SIZE * output_size;
+    float* buffer_X2 = buffer_X1 + BLOCK_SIZE * BLOCK_SIZE * X1_third_size;
+    float* buffer_multipliers = buffer_X2 + BLOCK_SIZE * BLOCK_SIZE * X2_third_size;
+
+    int i = threadIdx.x + blockDim.x * blockIdx.x;
+    int j = threadIdx.y + blockDim.y * blockIdx.y;
+    
+    int single_multipliers_block_size = (nz / (BLOCK_SIZE * BLOCK_SIZE)) + 1;
+    int total_thread_idx = threadIdx.x * BLOCK_SIZE + threadIdx.y;
+    int multipliers_pos_from = total_thread_idx * single_multipliers_block_size;
+    int multipliers_pos_to = (total_thread_idx + 1) * single_multipliers_block_size;
+    if (multipliers_pos_to > nz) {
+      multipliers_pos_to = nz;
+    }
+
+
+    //int z = threadIdx.z + blockDim.z * blockIdx.z;
 
     //if (i<nx && j<ny && z<nz) {
     //    int pos = nx*ny*z + nx*j + i;
@@ -38,13 +52,30 @@ __global__ void sparse_accumulation_cuda_forward_kernel(
     int delta_now_X1 = j*X1_third_size + i*ny*X1_third_size;
     int delta_now_output =  j*output_size+  i*output_size*ny;
     int delta_now_X2 = j*X2_third_size + i*ny*X2_third_size;
-    int delta_buffer = (BLOCK_SIZE * threadIdx.x + threadIdx.y) * output_size;
     
+    int delta_buffer_output = (BLOCK_SIZE * threadIdx.x + threadIdx.y) * output_size;
+    int delta_buffer_X1 = (BLOCK_SIZE * threadIdx.x + threadIdx.y) * X1_third_size;
+    int delta_buffer_X2 = (BLOCK_SIZE * threadIdx.x + threadIdx.y) * X2_third_size;
+    
+    for (int active_index = multipliers_pos_from; active_index < multipliers_pos_to; ++active_index) {
+        buffer_multipliers[active_index] = multipliers[active_index];
+    }
+
+    __syncthreads();
     if (i<nx && j<ny) {
       //printf("in kernel i %d  j %d\n",i,j) ;
       for (int z_output = 0; z_output < output_size; ++z_output) {
-        buffer_output[delta_buffer + z_output] = 0.0;
+        buffer_output[delta_buffer_output + z_output] = 0.0;
       }
+
+      for (int X1_index = 0; X1_index < X1_third_size; ++X1_index) {
+        buffer_X1[delta_buffer_X1 + X1_index] = X1[delta_now_X1 + X1_index];
+      }
+
+      for (int X2_index = 0; X2_index < X2_third_size; ++X2_index) {
+        buffer_X2[delta_buffer_X2 + X2_index] = X2[delta_now_X2 + X2_index];
+      }
+
       __syncthreads();
       for (int z = 0 ; z < nz ; ++z){
         int z_output = idx_output[z];
@@ -55,9 +86,9 @@ __global__ void sparse_accumulation_cuda_forward_kernel(
         //int pos_X2 = nx*ny*z_X2 + nx*j + i ;
         //int pos_output = nx*ny*z_output + nx*j+  i ;
 
-        int pos_X1 = z_X1 + delta_now_X1;
+        int pos_X1 = z_X1 + delta_buffer_X1;
         int pos_output = z_output + delta_now_output;
-        int pos_X2 = z_X2 + delta_now_X2;
+        int pos_X2 = z_X2 + delta_buffer_X2;
         //printf("z_output %d \n",z_output) ;
         //printf("z_X1 %d \n",z_X1);
         //printf("z_X2 %d \n",z_X2);
@@ -71,7 +102,7 @@ __global__ void sparse_accumulation_cuda_forward_kernel(
         //float X1[pos_X1]*X2[pos_X2]*multipliers[z];
         //buffer[z_output] += X1[pos_X1]*X2[pos_X2]*multipliers[z];
         // output[delta_now_output + z_output] += X1[pos_X1]*X2[pos_X2]*multipliers[z];
-        buffer_output[delta_buffer + z_output] += X1[pos_X1]*X2[pos_X2]*multipliers[z];
+        buffer_output[delta_buffer_output + z_output] += buffer_X1[pos_X1]*buffer_X2[pos_X2]*buffer_multipliers[z];
         //output[pos_output] += X1[pos_X1]*X2[pos_X2]*multipliers[z];
         //__syncthreads();
 
@@ -80,7 +111,7 @@ __global__ void sparse_accumulation_cuda_forward_kernel(
       };
       __syncthreads();
       for (int z_output = 0; z_output < output_size; ++z_output) {
-        output[delta_now_output + z_output] = buffer_output[delta_buffer + z_output];
+        output[delta_now_output + z_output] = buffer_output[delta_buffer_output + z_output];
       }
       //output[pos_output] += 1; //multipliers[z];
     };
@@ -185,8 +216,15 @@ std::vector<torch::Tensor> sparse_accumulation_cuda_forward(
   int nbz = find_num_blocks(nz, block_dim.z);
   dim3 grid_dim(nbx, nby);
 
+  int output_buf_size = BLOCK_SIZE * BLOCK_SIZE * output_size * sizeof(float);
+  int X1_buf_size = BLOCK_SIZE * BLOCK_SIZE * X1_third_size * sizeof(float);
+  int X2_buf_size = BLOCK_SIZE * BLOCK_SIZE * X2_third_size * sizeof(float);
+  int multipliers_size = multipliers.sizes()[0] * sizeof(float);
+
+  int total_buf_size = output_buf_size + X1_buf_size + X2_buf_size + multipliers_size;
+  
   AT_DISPATCH_FLOATING_TYPES(output.type(), "sparse_accumulation_forward_cuda", ([&] {
-  sparse_accumulation_cuda_forward_kernel<scalar_t><<<grid_dim, block_dim, BLOCK_SIZE * BLOCK_SIZE * output_size * sizeof(float)>>>(
+  sparse_accumulation_cuda_forward_kernel<scalar_t><<<grid_dim, block_dim, total_buf_size>>>(
       output.data<scalar_t>(),
       X1.data<scalar_t>(),
       X2.data<scalar_t>(),
