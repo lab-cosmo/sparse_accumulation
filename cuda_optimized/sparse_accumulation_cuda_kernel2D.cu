@@ -81,7 +81,7 @@ __global__ void sparse_accumulation_cuda_forward_kernel(
         buffer_X2_final[X2_index] = X2_final[X2_index];
       }
 
-      __syncthreads();
+      
       int z_output, z_X1, z_X2;
       for (int z = 0 ; z < nz ; ++z){
         z_output = buffer_idx_output[z];
@@ -91,7 +91,7 @@ __global__ void sparse_accumulation_cuda_forward_kernel(
                                 buffer_X2_final[z_X2]*buffer_multipliers[z];
         
       };
-      __syncthreads();
+      
       for (int z_output = 0; z_output < output_size; ++z_output) {
         output_final[z_output] = buffer_output_final[z_output];
       };
