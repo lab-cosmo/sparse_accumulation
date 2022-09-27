@@ -29,6 +29,10 @@ __global__ void sparse_accumulation_cuda_forward_kernel(
     float* buffer_X1 = buffer_output + BLOCK_SIZE * BLOCK_SIZE * output_size;
     float* buffer_X2 = buffer_X1 + BLOCK_SIZE * BLOCK_SIZE * X1_third_size;
     float* buffer_multipliers = buffer_X2 + BLOCK_SIZE * BLOCK_SIZE * X2_third_size;
+    float* buffer_idx_output_raw = buffer_multipliers + nz;
+    int* buffer_idx_output = reinterpret_cast<int*>(buffer_idx_output_raw);
+    int* buffer_idx_X1 = buffer_idx_output + nz;
+    int* buffer_idx_X2 = buffer_idx_X1 + nz;
 
     int i = threadIdx.x + blockDim.x * blockIdx.x;
     int j = threadIdx.y + blockDim.y * blockIdx.y;
@@ -41,14 +45,6 @@ __global__ void sparse_accumulation_cuda_forward_kernel(
       multipliers_pos_to = nz;
     }
 
-
-    //int z = threadIdx.z + blockDim.z * blockIdx.z;
-
-    //if (i<nx && j<ny && z<nz) {
-    //    int pos = nx*ny*z + nx*j + i;
-    //    output[pos] = X1[pos];
-    //};
-
     int delta_now_X1 = j*X1_third_size + i*ny*X1_third_size;
     int delta_now_output =  j*output_size+  i*output_size*ny;
     int delta_now_X2 = j*X2_third_size + i*ny*X2_third_size;
@@ -59,79 +55,47 @@ __global__ void sparse_accumulation_cuda_forward_kernel(
     
     for (int active_index = multipliers_pos_from; active_index < multipliers_pos_to; ++active_index) {
         buffer_multipliers[active_index] = multipliers[active_index];
+        buffer_idx_output[active_index] = idx_output[active_index];
+        buffer_idx_X1[active_index] = idx_1[active_index];
+        buffer_idx_X2[active_index] = idx_2[active_index];
     }
+    float* buffer_output_final = buffer_output + delta_buffer_output;
+    float* buffer_X1_final = buffer_X1 + delta_buffer_X1;
+    float* buffer_X2_final = buffer_X2 + delta_buffer_X2;
 
+    auto output_final = output + delta_now_output;
+    auto X1_final = X1 + delta_now_X1;
+    auto X2_final = X2 + delta_now_X2;
     __syncthreads();
     if (i<nx && j<ny) {
       //printf("in kernel i %d  j %d\n",i,j) ;
       for (int z_output = 0; z_output < output_size; ++z_output) {
-        buffer_output[delta_buffer_output + z_output] = 0.0;
+        buffer_output_final[z_output] = 0.0;
       }
 
       for (int X1_index = 0; X1_index < X1_third_size; ++X1_index) {
-        buffer_X1[delta_buffer_X1 + X1_index] = X1[delta_now_X1 + X1_index];
+        buffer_X1_final[X1_index] = X1_final[X1_index];
       }
 
       for (int X2_index = 0; X2_index < X2_third_size; ++X2_index) {
-        buffer_X2[delta_buffer_X2 + X2_index] = X2[delta_now_X2 + X2_index];
+        buffer_X2_final[X2_index] = X2_final[X2_index];
       }
 
       __syncthreads();
+      int z_output, z_X1, z_X2;
       for (int z = 0 ; z < nz ; ++z){
-        int z_output = idx_output[z];
-        int z_X1 = idx_1[z] ;
-        int z_X2 = idx_2[z] ;
-        //int pos = nx*ny*z + nx*j + i;
-        //int pos_X1 = nx*ny*z_X1 + nx*j + i ;
-        //int pos_X2 = nx*ny*z_X2 + nx*j + i ;
-        //int pos_output = nx*ny*z_output + nx*j+  i ;
-
-        int pos_X1 = z_X1 + delta_buffer_X1;
-        int pos_output = z_output + delta_now_output;
-        int pos_X2 = z_X2 + delta_buffer_X2;
-        //printf("z_output %d \n",z_output) ;
-        //printf("z_X1 %d \n",z_X1);
-        //printf("z_X2 %d \n",z_X2);
-        //printf("pos_X1 %d \n",pos_X1);
-        //printf("pos_x2 %d \n",pos_X1);
-       //printf("pos_output %d  X1 %f  X2 %f  z %d  multipliers[z] %f \n",pos_output,X1[pos_X1],X2[pos_X2],z,multipliers[z]);
-        //printf("pos_output %d \n X1 %f \n X2 %f \n",pos_output,X1[pos_X1],X2[pos_X2]);
-        //printf("X1 %f \n",X1[pos_X1]);
-        //printf("X2 %f \n",X2[pos_X2]);
-        //printf(" i use 2 \n multipliers %f \n",multipliers[z]);
-        //float X1[pos_X1]*X2[pos_X2]*multipliers[z];
-        //buffer[z_output] += X1[pos_X1]*X2[pos_X2]*multipliers[z];
-        // output[delta_now_output + z_output] += X1[pos_X1]*X2[pos_X2]*multipliers[z];
-        buffer_output[delta_buffer_output + z_output] += buffer_X1[pos_X1]*buffer_X2[pos_X2]*buffer_multipliers[z];
-        //output[pos_output] += X1[pos_X1]*X2[pos_X2]*multipliers[z];
-        //__syncthreads();
-
-        //printf("pos_output %d \n",pos_output);
-        //printf("z %d \n",z);
+        z_output = buffer_idx_output[z];
+        z_X1 = buffer_idx_X1[z];
+        z_X2 = buffer_idx_X2[z];
+        buffer_output_final[z_output] += buffer_X1_final[z_X1]*\
+                                buffer_X2_final[z_X2]*buffer_multipliers[z];
+        
       };
       __syncthreads();
       for (int z_output = 0; z_output < output_size; ++z_output) {
-        output[delta_now_output + z_output] = buffer_output[delta_buffer_output + z_output];
-      }
-      //output[pos_output] += 1; //multipliers[z];
+        output_final[z_output] = buffer_output_final[z_output];
+      };
     };
-    //for (int index_first = 0; index_first < output.size(0); ++index_first){
-    //    for (int index_second = 0; index_second < output.size(1); ++index_second) {
-    //        for (int index = 0; index < idx_output_a.size(0); ++index) {                
-    //            auto first = X1_a[index_first][index_second][idx_1_a[index]];
-    //            auto second = X2_a[index_first][index_second][idx_2_a[index]];
-    //            auto third = multipliers_a[index];
-    //            auto contribution = first * second * third;                
-    //            output_a[index_first][index_second][idx_output_a[index]] += contribution;
-    //        }
-    //    }
-    //}
-  // const int index = blockIdx.x * blockDim.x + threadIdx.x;
-  // //printf("hello I am blockIdx %d, blockDim %d, threadIdx %d \n",blockIdx.x , blockDim.x , threadIdx.x);
-  // if (index < n) {
-  //   //printf("hello inside1 loop I am blockIdx %d, blockDim %d, threadIdx %d \n",blockIdx.x , blockDim.x , threadIdx.x);
-  //   output[index] = X1[index];
-  // }
 }
 
 template <typename scalar_t>
@@ -220,8 +184,9 @@ std::vector<torch::Tensor> sparse_accumulation_cuda_forward(
   int X1_buf_size = BLOCK_SIZE * BLOCK_SIZE * X1_third_size * sizeof(float);
   int X2_buf_size = BLOCK_SIZE * BLOCK_SIZE * X2_third_size * sizeof(float);
   int multipliers_size = multipliers.sizes()[0] * sizeof(float);
+  int index_size = idx_output.sizes()[0] * sizeof(int);
 
-  int total_buf_size = output_buf_size + X1_buf_size + X2_buf_size + multipliers_size;
+  int total_buf_size = output_buf_size + X1_buf_size + X2_buf_size + multipliers_size + index_size * 3;
   
   AT_DISPATCH_FLOATING_TYPES(output.type(), "sparse_accumulation_forward_cuda", ([&] {
   sparse_accumulation_cuda_forward_kernel<scalar_t><<<grid_dim, block_dim, total_buf_size>>>(
