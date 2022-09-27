@@ -104,11 +104,11 @@ def test_forward(L_MAX,BATCH_SIZE,N_FEATURES,atol = 1e-7,rtol=1e-8):
     #print('X2 ', X2)
     #print('X1_d ', X1_d)
     #print('X2_d ', X2_d)
-    #print('cuda_output ',cuda_output)
+    print('cuda_output ',cuda_output)
     #print(f'{multipliers=} ')
     #print(f'{multipliers_d=} ')
     #print('X1_d ',X1_d)
-    #print(f'{python_loops_output=}')
+    print(f'{python_loops_output=}')
     print(f'forward {L_MAX=}, {BATCH_SIZE=}, {N_FEATURES=}')
     print(f'{relative_error=}')
     
