@@ -65,16 +65,17 @@ __global__ void sparse_accumulation_cuda_forward_kernel(
     auto X2_final = X2 + delta_now_X2;
     __syncthreads();
 
-    float* buffer_output_final = (float*) alloca(output_size * sizeof(float));
-    float* buffer_X1_final = (float*) alloca(X1_third_size * sizeof(float));
-    float* buffer_X2_final = (float*) alloca(X2_third_size * sizeof(float));
-
+   
+    float buffer_output_final[17];
+    float buffer_X1_final[17];
+    float buffer_X2_final[17];
+   
     if (i<nx && j<ny) {
       //printf("in kernel i %d  j %d\n",i,j) ;
       for (int z_output = 0; z_output < output_size; ++z_output) {
         buffer_output_final[z_output] = 0.0;
       }
-
+      
       for (int X1_index = 0; X1_index < X1_third_size; ++X1_index) {
         buffer_X1_final[X1_index] = X1_final[X1_index];
       }
@@ -83,7 +84,7 @@ __global__ void sparse_accumulation_cuda_forward_kernel(
         buffer_X2_final[X2_index] = X2_final[X2_index];
       }
 
-      __syncthreads();
+     
       int z_output, z_X1, z_X2;
       for (int z = 0 ; z < nz ; ++z){
         z_output = buffer_idx_output[z];
@@ -93,7 +94,7 @@ __global__ void sparse_accumulation_cuda_forward_kernel(
                                 buffer_X2_final[z_X2]*buffer_multipliers[z];
         
       };
-      __syncthreads();
+      
       for (int z_output = 0; z_output < output_size; ++z_output) {
         output_final[z_output] = buffer_output_final[z_output];
       };
