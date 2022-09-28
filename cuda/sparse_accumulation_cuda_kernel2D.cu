@@ -82,6 +82,95 @@ __global__ void sparse_accumulation_cuda_forward_kernel(
   // }
 }
 
+template <typename scalar_t >
+__global__ void sparse_accumulation_cuda_forward_kernel_grpwrites(
+    scalar_t* __restrict__ output,
+    const scalar_t* __restrict__ X1,
+    const scalar_t* __restrict__ X2,
+    const int64_t* __restrict__ idx_output,
+    const int64_t* __restrict__ idx_1,
+    const int64_t* __restrict__ idx_2,
+    const scalar_t* __restrict__ multipliers,
+    const int output_size,
+    const int X1_third_size,
+    const int X2_third_size,
+    const int nx,
+    const int ny,
+    const int nz) {
+    
+    int zid = blockIdx.x/nx;
+    int colid = blockIdx.x%nx;
+
+    auto ltid = threadIdx.x;
+
+    extern __shared__ float buffer[];
+    float* opcols = buffer;
+    float* muls = opcols + ny;
+    int* idx_1s = reinterpret_cast<int*>(muls + nz);
+    int* idx_2s = reinterpret_cast<int*>(idx_1s + nz);
+    int* idx_outputs = reinterpret_cast<int*>(idx_2s + nz);
+
+    int loopcount = nz/blockDim.x + 1;
+
+    for (int i = 0; i < loopcount; i++)
+    {
+      auto index = blockDim.x*i + ltid;
+      if (index < nz)
+      {
+        muls[index] = multipliers[index];
+        idx_1s[index] = idx_1[index];
+        idx_2s[index] = idx_2[index];
+        idx_outputs[index] = idx_output[index];
+      }
+    }
+
+    loopcount = ny/blockDim.x + 1;
+    // initialize shared memory with zero
+    for (int i = 0; i < loopcount; i++)
+    {
+      auto index = blockDim.x*i + ltid;
+      if (index < ny)
+      {
+        opcols[index] = 0.0;
+      }
+    }
+
+    // loop over the multipliers
+    for (int opz = 0; opz < nz; opz++)
+    {
+      if (idx_output[opz] == zid)
+      {
+        //printf("multiplier = %f \n", muls[opz]);
+        for (int i = 0; i < loopcount; i++)
+        {
+        // compute over the column elements
+        auto index = blockDim.x*i + ltid;
+        if (index < ny)
+          {
+            // calculate global memory indices in terms of "colid", "index", "zid"
+            int X1_pos = idx_1s[opz] + index*X1_third_size + colid*ny*X1_third_size;
+            int X2_pos = idx_2s[opz] + index*X2_third_size + colid*ny*X2_third_size;
+
+            opcols[index] += X1[X1_pos]*X2[X2_pos]*muls[opz]; // up to 50% time taken in this global memory read
+          }
+        }
+      }
+    }
+
+    // copy output data to global memory
+    for (int i = 0; i < loopcount; i++)
+    {
+      // compute over the column elements
+      auto index = blockDim.x*i + ltid;
+      if (index < ny)
+        {
+          // calculate global memory indices for the output array in terms of "colid", "index", "zid"
+          int op_index = zid + index*output_size + colid*ny*output_size;
+          output[op_index] = opcols[index];
+        }
+    }
+}
+
 template <typename scalar_t>
 __global__ void sparse_accumulation_cuda_backward_kernel(
     scalar_t* __restrict__ d_X1,
@@ -164,8 +253,14 @@ std::vector<torch::Tensor> sparse_accumulation_cuda_forward(
   int nbz = find_num_blocks(nz, block_dim.z);
   dim3 grid_dim(nbx, nby);
 
+  int num_threads = 128;
+  int num_blocks  = output_size*nx;
+  
+
   AT_DISPATCH_FLOATING_TYPES(output.type(), "sparse_accumulation_forward_cuda", ([&] {
-  sparse_accumulation_cuda_forward_kernel<scalar_t><<<grid_dim, block_dim>>>(
+  // sparse_accumulation_cuda_forward_kernel<scalar_t><<<grid_dim, block_dim>>>(
+  sparse_accumulation_cuda_forward_kernel_grpwrites<scalar_t><<<num_blocks, num_threads, 16384>>>(
+  //sparse_accumulation_cuda_forward_kernel_grpwrites<scalar_t><<<5, 1, 16384>>>(
       output.data<scalar_t>(),
       X1.data<scalar_t>(),
       X2.data<scalar_t>(),
