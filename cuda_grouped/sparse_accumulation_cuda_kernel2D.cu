@@ -5,6 +5,109 @@
 
 #include <iostream>
 using namespace torch::indexing;
+#define BLOCK_SIZE 16
+
+template <typename scalar_t >
+__global__ void sparse_accumulation_cuda_forward_kernel_grpwrites(
+    scalar_t* __restrict__ output,
+    const scalar_t* __restrict__ X1,
+    const scalar_t* __restrict__ X2,
+    const int64_t* __restrict__ idx_output,
+    const int64_t* __restrict__ idx_1,
+    const int64_t* __restrict__ idx_2,
+    const scalar_t* __restrict__ multipliers,
+    const int output_size,
+    const int X1_third_size,
+    const int X2_third_size,
+    const int nx,
+    const int ny,
+    const int nz) {
+    
+    extern __shared__ char buffer[];
+    // offset (in bytes) of the first available slot in the shared memory buffer
+    size_t offset = 0;
+
+    scalar_t* buffer_X1 = reinterpret_cast<scalar_t*>(buffer + offset);
+    offset += blockDim.x * blockDim.y * X1_third_size * sizeof(scalar_t);
+
+    scalar_t* buffer_X2 = reinterpret_cast<scalar_t*>(buffer + offset);
+    offset += blockDim.x * blockDim.y * X2_third_size * sizeof(scalar_t);
+
+    scalar_t* buffer_multipliers = reinterpret_cast<scalar_t*>(buffer + offset);
+    offset += nz * sizeof(scalar_t);
+
+    int32_t* buffer_idx_output = reinterpret_cast<int32_t*>(buffer + offset);
+    offset += nz * sizeof(int32_t);
+
+    int32_t* buffer_idx_X1 = reinterpret_cast<int32_t*>(buffer + offset);
+    offset += nz * sizeof(int32_t);
+
+    int32_t* buffer_idx_X2 = reinterpret_cast<int32_t*>(buffer + offset);
+    offset += nz * sizeof(int32_t);
+    
+    int single_multipliers_block_size = (nz / (blockDim.x * blockDim.y)) + 1;
+    int total_thread_idx = threadIdx.x * blockDim.y + threadIdx.y;
+    int multipliers_pos_from = total_thread_idx * single_multipliers_block_size;
+    int multipliers_pos_to = (total_thread_idx + 1) * single_multipliers_block_size;
+    if (multipliers_pos_to > nz) {
+        multipliers_pos_to = nz;
+    }
+    for (int active_index = multipliers_pos_from; active_index < multipliers_pos_to; ++active_index) {
+        buffer_multipliers[active_index] = multipliers[active_index];
+        buffer_idx_output[active_index] = idx_output[active_index];
+        buffer_idx_X1[active_index] = idx_1[active_index];
+        buffer_idx_X2[active_index] = idx_2[active_index];
+    }
+    __syncthreads();
+
+    int delta_buffer_X1 = (blockDim.y * threadIdx.x + threadIdx.y) * X1_third_size;
+    int delta_buffer_X2 = (blockDim.y * threadIdx.x + threadIdx.y) * X2_third_size;
+
+    scalar_t* my_buffer_X1 = buffer_X1 + delta_buffer_X1;
+    scalar_t* my_buffer_X2 = buffer_X2 + delta_buffer_X2;
+
+    int tid = threadIdx.x + blockDim.x * blockIdx.x;
+    int dimension_loop = (nx*ny) / blockDim.x +1 ; 
+    
+    int init = threadIdx.x * dimension_loop ;
+
+    int output_index_z = blockIdx.x;
+
+    int loopcount = nz/blockDim.x + 1;
+    
+    int ix, iy;
+    int pos_output;
+    scalar_t tmp_sum;
+    for (int ixy=init ; ixy<init + dimension_loop ; ixy++){
+      ix = ixy/(ny) ;
+      iy = ixy%(ny);
+      if (ix<nx && iy<ny){
+        
+        const scalar_t* X1_final = X1 + iy*X1_third_size + ix*ny*X1_third_size;
+        const scalar_t* X2_final = X2 + iy*X2_third_size + ix*ny*X2_third_size;
+
+        for (int z = 0; z < X1_third_size; ++z) {
+          my_buffer_X1[z] = X1_final[z];
+        }
+
+        for (int z = 0; z < X2_third_size; ++z) {
+          my_buffer_X2[z] = X2_final[z];
+        }
+
+        tmp_sum = 0.;
+        for (int opz = 0; opz < nz; opz++){
+          if (buffer_idx_output[opz]==output_index_z ){
+            tmp_sum += my_buffer_X1[buffer_idx_X1[opz]]*my_buffer_X2[buffer_idx_X2[opz]]*buffer_multipliers[opz];
+          };
+        };
+
+        pos_output = output_index_z+ iy*output_size+  ix*output_size*ny ;
+        output[pos_output] += tmp_sum ; 
+      };
+    };
+}
+
+
 
 template <typename scalar_t >
 __global__ void sparse_accumulation_cuda_forward_kernel(
@@ -80,83 +183,6 @@ __global__ void sparse_accumulation_cuda_forward_kernel(
   //   //printf("hello inside1 loop I am blockIdx %d, blockDim %d, threadIdx %d \n",blockIdx.x , blockDim.x , threadIdx.x);
   //   output[index] = X1[index];
   // }
-}
-
-template <typename scalar_t >
-__global__ void sparse_accumulation_cuda_forward_kernel_grpwrites(
-    scalar_t* __restrict__ output,
-    const scalar_t* __restrict__ X1,
-    const scalar_t* __restrict__ X2,
-    const int64_t* __restrict__ idx_output,
-    const int64_t* __restrict__ idx_1,
-    const int64_t* __restrict__ idx_2,
-    const scalar_t* __restrict__ muls,
-    const int output_size,
-    const int X1_third_size,
-    const int X2_third_size,
-    const int nx,
-    const int ny,
-    const int nz) {
-    
-    //extern __shared__ double muls[];
-    //extern __shared__ int64_t idx_1s[];
-    //extern __shared__ int64_t idx_2s[];
-
-
-    int tid = threadIdx.x + blockDim.x * blockIdx.x;
-    int dimension_loop = (nx*ny) / blockDim.x +1 ; 
-    //int dimension_loop = blockDim.x*i + threadIdx.x;
-    int init = threadIdx.x * dimension_loop ;
-
-    int output_index_z = blockIdx.x;
-
-    int loopcount = nz/blockDim.x + 1;
-    //printf("loopcuont %d \n", loopcount);
-
-    //for (int i = 0; i < loopcount; i++)
-    //{
-    //  auto index = blockDim.x*i + threadIdx.x;
-    //  if (index < nz)
-    //  {
-    //    muls[index] = multipliers[index];
-    //    //idx_1s[index] = idx_1[index];
-    //    //idx_2s[index] = idx_2[index];
-    //   //printf("mul %f index %d \n",muls[index],index);
-    //  }
-    //}
-    //__syncthreads();
-    
-    //printf("first output_index_z %d \n",output_index_z);
-      for (int ixy=init ; ixy<init + dimension_loop ; ixy++){
-      int ix = ixy/(ny) ;
-      int iy = ixy%(ny);
-      //int iy = restx/(output_size) ;
-      //int resty = restx%(output_size);
-      if (ix<nx && iy<ny){
-        scalar_t tmp_sum = 0. ;
-        for (int opz = 0; opz < nz; opz++){
-          //printf("idx_output[opz] %d \n",idx_output[opz]);
-          if (idx_output[opz]==output_index_z ){
-            //printf("outputsize %d ny %d nz %d \n", output_size,ny,nz);
-            //printf("ix %d iy %d tid %d output_index_z %d \n", ix,iy,tid,output_index_z);
-            //int z_X1 = idx_1s[opz] ;
-            //int z_X2 = idx_2s[opz] ;
-            int z_X1 = idx_1[opz] ;
-            int z_X2 = idx_2[opz] ;
-            double mul  = muls[opz];
-
-            int pos_X1 = z_X1 + iy*X1_third_size + ix*ny*X1_third_size ;
-            int pos_X2 = z_X2 + iy*X2_third_size + ix*ny*X2_third_size ;
-            //printf("mul %f",mul);
-            tmp_sum += X1[pos_X1]*X2[pos_X2]*mul;
-
-          };
-
-        };
-        int pos_output = output_index_z+ iy*output_size+  ix*output_size*ny ;
-        output[pos_output] += tmp_sum ; 
-      };
-    };
 }
 
 
@@ -236,13 +262,13 @@ std::vector<torch::Tensor> sparse_accumulation_cuda_forward(
   //}));
 
   auto find_num_blocks = [](int x, int bdim) {return (x+bdim-1)/bdim;};
-  dim3 block_dim(16, 16);
+  dim3 block_dim(BLOCK_SIZE, BLOCK_SIZE);
   int nbx = find_num_blocks(nx, block_dim.x);
   int nby = find_num_blocks(ny, block_dim.y);
   int nbz = find_num_blocks(nz, block_dim.z);
   dim3 grid_dim(nbx, nby);
 
-  int num_threads = 256;
+  int num_threads = BLOCK_SIZE * BLOCK_SIZE;
   int num_blocks = output_size;
   //printf("num_blocks %d \n",num_blocks);
 
@@ -307,20 +333,29 @@ std::vector<torch::Tensor> sparse_accumulation_cuda_forward_grpwrites(
   //}));
 
   auto find_num_blocks = [](int x, int bdim) {return (x+bdim-1)/bdim;};
-  dim3 block_dim(16, 16);
+  dim3 block_dim(BLOCK_SIZE, BLOCK_SIZE);
   int nbx = find_num_blocks(nx, block_dim.x);
   int nby = find_num_blocks(ny, block_dim.y);
   int nbz = find_num_blocks(nz, block_dim.z);
   dim3 grid_dim(nbx, nby);
 
-  int num_threads = 256;
+  int num_threads = BLOCK_SIZE * BLOCK_SIZE;
   int num_blocks = output_size;
   //printf("num_blocks %d \n",num_blocks);
 
   AT_DISPATCH_FLOATING_TYPES(output.type(), "sparse_accumulation_forward_cuda", ([&] {
   //sparse_accumulation_cuda_forward_kernel<scalar_t><<<grid_dim, block_dim>>>(
   //sparse_accumulation_cuda_forward_kernel_grpwrites<scalar_t><<< num_blocks,num_threads, 16384>>>(
-  sparse_accumulation_cuda_forward_kernel_grpwrites<scalar_t><<< num_blocks,num_threads>>>(
+
+   
+    size_t X1_buf_size = BLOCK_SIZE * BLOCK_SIZE * X1_third_size * sizeof(scalar_t);
+    size_t X2_buf_size = BLOCK_SIZE * BLOCK_SIZE * X2_third_size * sizeof(scalar_t);
+    size_t multipliers_size = multipliers.sizes()[0] * sizeof(scalar_t);
+    size_t index_size = idx_output.sizes()[0] * sizeof(int32_t);
+
+    size_t total_buf_size = X1_buf_size + X2_buf_size + multipliers_size + index_size * 3;
+
+  sparse_accumulation_cuda_forward_kernel_grpwrites<scalar_t><<< num_blocks,num_threads, total_buf_size>>>(
       output.data<scalar_t>(),
       X1.data<scalar_t>(),
       X2.data<scalar_t>(),
@@ -364,7 +399,7 @@ std::vector<torch::Tensor> sparse_accumulation_cuda_backward(
     const auto nz = idx_output.sizes()[0];
 
     auto find_num_blocks = [](int x, int bdim) {return (x+bdim-1)/bdim;};
-    dim3 block_dim(16, 16);
+    dim3 block_dim(BLOCK_SIZE, BLOCK_SIZE);
     int nbx = find_num_blocks(nx, block_dim.x);
     int nby = find_num_blocks(ny, block_dim.y);
     dim3 grid_dim(nbx, nby);
