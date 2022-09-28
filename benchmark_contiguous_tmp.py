@@ -197,5 +197,8 @@ print("torch index_add_; active dim 2; forward; cuda: ", np.mean(times[1:]))
 times = benchmark_forward_gpu(BATCH_SIZE, N_FEATURES, 2, 
                           torch.ops.sparse_accumulation_cuda.forward, 10)
 print("CUDA kernel; active dim 2; forward; cuda: ", np.mean(times[1:]))
+times = benchmark_forward_gpu(BATCH_SIZE, N_FEATURES, 2, 
+                          torch.ops.sparse_accumulation_cuda.forward_grpwrites, 10)
+print("CUDA kernel grpwrites; active dim 2; forward; cuda: ", np.mean(times[1:]))
 '''times = benchmark_forward(BATCH_SIZE, N_FEATURES, 2, sparse_accumulation.SparseAccumulation.apply, 10)
 print("cpp; active dim 2; forward: ", np.mean(times[1:]))'''

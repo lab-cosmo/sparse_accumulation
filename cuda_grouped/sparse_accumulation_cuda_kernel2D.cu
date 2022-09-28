@@ -82,6 +82,84 @@ __global__ void sparse_accumulation_cuda_forward_kernel(
   // }
 }
 
+template <typename scalar_t >
+__global__ void sparse_accumulation_cuda_forward_kernel_grpwrites(
+    scalar_t* __restrict__ output,
+    const scalar_t* __restrict__ X1,
+    const scalar_t* __restrict__ X2,
+    const int64_t* __restrict__ idx_output,
+    const int64_t* __restrict__ idx_1,
+    const int64_t* __restrict__ idx_2,
+    const scalar_t* __restrict__ muls,
+    const int output_size,
+    const int X1_third_size,
+    const int X2_third_size,
+    const int nx,
+    const int ny,
+    const int nz) {
+    
+    //extern __shared__ double muls[];
+    //extern __shared__ int64_t idx_1s[];
+    //extern __shared__ int64_t idx_2s[];
+
+
+    int tid = threadIdx.x + blockDim.x * blockIdx.x;
+    int dimension_loop = (nx*ny) / blockDim.x +1 ; 
+    //int dimension_loop = blockDim.x*i + threadIdx.x;
+    int init = threadIdx.x * dimension_loop ;
+
+    int output_index_z = blockIdx.x;
+
+    int loopcount = nz/blockDim.x + 1;
+    //printf("loopcuont %d \n", loopcount);
+
+    //for (int i = 0; i < loopcount; i++)
+    //{
+    //  auto index = blockDim.x*i + threadIdx.x;
+    //  if (index < nz)
+    //  {
+    //    muls[index] = multipliers[index];
+    //    //idx_1s[index] = idx_1[index];
+    //    //idx_2s[index] = idx_2[index];
+    //   //printf("mul %f index %d \n",muls[index],index);
+    //  }
+    //}
+    //__syncthreads();
+    
+    //printf("first output_index_z %d \n",output_index_z);
+      for (int ixy=init ; ixy<init + dimension_loop ; ixy++){
+      int ix = ixy/(ny) ;
+      int iy = ixy%(ny);
+      //int iy = restx/(output_size) ;
+      //int resty = restx%(output_size);
+      if (ix<nx && iy<ny){
+        scalar_t tmp_sum = 0. ;
+        for (int opz = 0; opz < nz; opz++){
+          //printf("idx_output[opz] %d \n",idx_output[opz]);
+          if (idx_output[opz]==output_index_z ){
+            //printf("outputsize %d ny %d nz %d \n", output_size,ny,nz);
+            //printf("ix %d iy %d tid %d output_index_z %d \n", ix,iy,tid,output_index_z);
+            //int z_X1 = idx_1s[opz] ;
+            //int z_X2 = idx_2s[opz] ;
+            int z_X1 = idx_1[opz] ;
+            int z_X2 = idx_2[opz] ;
+            double mul  = muls[opz];
+
+            int pos_X1 = z_X1 + iy*X1_third_size + ix*ny*X1_third_size ;
+            int pos_X2 = z_X2 + iy*X2_third_size + ix*ny*X2_third_size ;
+            //printf("mul %f",mul);
+            tmp_sum += X1[pos_X1]*X2[pos_X2]*mul;
+
+          };
+
+        };
+        int pos_output = output_index_z+ iy*output_size+  ix*output_size*ny ;
+        output[pos_output] += tmp_sum ; 
+      };
+    };
+}
+
+
 template <typename scalar_t>
 __global__ void sparse_accumulation_cuda_backward_kernel(
     scalar_t* __restrict__ d_X1,
@@ -164,8 +242,14 @@ std::vector<torch::Tensor> sparse_accumulation_cuda_forward(
   int nbz = find_num_blocks(nz, block_dim.z);
   dim3 grid_dim(nbx, nby);
 
+  int num_threads = 256;
+  int num_blocks = output_size;
+  //printf("num_blocks %d \n",num_blocks);
+
   AT_DISPATCH_FLOATING_TYPES(output.type(), "sparse_accumulation_forward_cuda", ([&] {
   sparse_accumulation_cuda_forward_kernel<scalar_t><<<grid_dim, block_dim>>>(
+  //sparse_accumulation_cuda_forward_kernel_grpwrites<scalar_t><<< num_blocks,num_threads, 16384>>>(
+  //sparse_accumulation_cuda_forward_kernel_grpwrites<scalar_t><<< num_blocks,num_threads>>>(
       output.data<scalar_t>(),
       X1.data<scalar_t>(),
       X2.data<scalar_t>(),
@@ -184,6 +268,81 @@ std::vector<torch::Tensor> sparse_accumulation_cuda_forward(
 
   return {output};
 }
+
+std::vector<torch::Tensor> sparse_accumulation_cuda_forward_grpwrites(
+    torch::Tensor X1,
+    torch::Tensor X2,
+    torch::Tensor idx_output,
+    int output_size,
+    torch::Tensor idx_1,
+    torch::Tensor idx_2,
+    torch::Tensor multipliers)
+    {
+  //auto output = torch::zeros_like(X1);
+  auto output = torch::zeros({X1.sizes()[0], X1.sizes()[1], output_size}, 
+            torch::TensorOptions()
+            .dtype(X1.dtype())
+            .device(X1.device())); 
+
+  auto X1_third_size = X1.sizes()[2]; 
+  auto X2_third_size = X2.sizes()[2]; 
+  const auto batch_sizex = output.sizes()[0];
+  const auto batch_sizey = output.sizes()[1];
+  const auto batch_sizez = idx_output.sizes()[0];
+
+  auto nx = batch_sizex ; 
+  auto ny = batch_sizey ; 
+  auto nz = batch_sizez ; 
+  auto threads = 124;
+  //const dim3 blocks((n+threads-1)/threads, batch_size);
+  //auto blocks = (n+threads-1)/threads;
+
+  //AT_DISPATCH_FLOATING_TYPES(output.type(), "sparse_accumulation_forward_cuda", ([&] {
+  //  sparse_accumulation_cuda_forward_kernel<scalar_t><<<blocks, threads>>>(
+  //      output.data<scalar_t>(),
+  //      X1.data<scalar_t>(),
+  //      n1,
+  //      n2,
+  //      );
+  //}));
+
+  auto find_num_blocks = [](int x, int bdim) {return (x+bdim-1)/bdim;};
+  dim3 block_dim(16, 16);
+  int nbx = find_num_blocks(nx, block_dim.x);
+  int nby = find_num_blocks(ny, block_dim.y);
+  int nbz = find_num_blocks(nz, block_dim.z);
+  dim3 grid_dim(nbx, nby);
+
+  int num_threads = 256;
+  int num_blocks = output_size;
+  //printf("num_blocks %d \n",num_blocks);
+
+  AT_DISPATCH_FLOATING_TYPES(output.type(), "sparse_accumulation_forward_cuda", ([&] {
+  //sparse_accumulation_cuda_forward_kernel<scalar_t><<<grid_dim, block_dim>>>(
+  //sparse_accumulation_cuda_forward_kernel_grpwrites<scalar_t><<< num_blocks,num_threads, 16384>>>(
+  sparse_accumulation_cuda_forward_kernel_grpwrites<scalar_t><<< num_blocks,num_threads>>>(
+      output.data<scalar_t>(),
+      X1.data<scalar_t>(),
+      X2.data<scalar_t>(),
+      idx_output.data<int64_t>(),
+      idx_1.data<int64_t>(),
+      idx_2.data<int64_t>(),
+      multipliers.data<scalar_t>(),
+      output_size,
+      X1_third_size,
+      X2_third_size,
+      nx,
+      ny,
+      nz
+      );
+  }));
+
+  return {output};
+}
+
+
+
+
 
 std::vector<torch::Tensor> sparse_accumulation_cuda_backward(
     torch::Tensor d_output,
@@ -259,6 +418,27 @@ std::vector<torch::Tensor> sparse_accumulation_gpu_forward(
   return sparse_accumulation_cuda_forward(X1,X2,idx_output,output_size,idx_1,idx_2,multipliers);
 }
 
+
+std::vector<torch::Tensor> sparse_accumulation_gpu_forward_grpwrites(
+      torch::Tensor X1,
+      torch::Tensor X2,
+      torch::Tensor idx_output,
+      int64_t output_size,
+      torch::Tensor idx_1,
+      torch::Tensor idx_2,
+      torch::Tensor multipliers){
+
+  CHECK_INPUT(X1);
+  CHECK_INPUT(X2);
+  CHECK_INPUT(idx_output);
+  //CHECK_INPUT(output_size);
+  CHECK_INPUT(idx_1);
+  CHECK_INPUT(idx_2);
+  CHECK_INPUT(multipliers);
+
+  return sparse_accumulation_cuda_forward_grpwrites(X1,X2,idx_output,output_size,idx_1,idx_2,multipliers);
+}
+
 std::vector<torch::Tensor> sparse_accumulation_gpu_backward(
   torch::Tensor d_output,
   torch::Tensor X1,
@@ -287,4 +467,5 @@ std::vector<torch::Tensor> sparse_accumulation_gpu_backward(
 TORCH_LIBRARY(sparse_accumulation_cuda, m) {
     m.def("forward", sparse_accumulation_gpu_forward);
     m.def("backward", sparse_accumulation_gpu_backward);
+    m.def("forward_grpwrites",sparse_accumulation_gpu_forward_grpwrites);
 }
