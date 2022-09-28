@@ -97,18 +97,21 @@ __global__ void sparse_accumulation_cuda_forward_kernel(
         }
 
         int z_output, z_X1, z_X2;
+        scalar_t now = 0;
+        int z_old = 0;
         for (int z = 0 ; z < nz ; ++z){
             z_output = buffer_idx_output[z];
+            if (z_old != z_output) {
+                output_final[z_old] = now;
+                now = 0;
+                z_old = z_output;
+            }
             z_X1 = buffer_idx_X1[z];
             z_X2 = buffer_idx_X2[z];
-            buffer_output_final[z_output] += buffer_X1_final[z_X1]
+            now += buffer_X1_final[z_X1]
                                            * buffer_X2_final[z_X2]
                                            * buffer_multipliers[z];
           };
-
-        for (int z_output = 0; z_output < output_size; ++z_output) {
-            output_final[z_output] = buffer_output_final[z_output];
-        };
     };
 }
 

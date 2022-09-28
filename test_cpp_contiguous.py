@@ -22,6 +22,13 @@ def get_rule(L_MAX):
     mu_aligned = torch.LongTensor(mu_aligned)
     multipliers = torch.FloatTensor(multipliers)
     
+    indices = np.argsort(mu_aligned)
+
+    m1_aligned = m1_aligned[indices]
+    m2_aligned = m2_aligned[indices]
+    mu_aligned = mu_aligned[indices]
+    multipliers = multipliers[indices]
+
     return m1_aligned, m2_aligned, mu_aligned, multipliers
 
 def test_forward(epsilon = 1e-7):

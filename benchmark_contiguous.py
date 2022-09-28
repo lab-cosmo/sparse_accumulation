@@ -37,6 +37,14 @@ m1_aligned = torch.LongTensor(m1_aligned)
 m2_aligned = torch.LongTensor(m2_aligned)
 mu_aligned = torch.LongTensor(mu_aligned)
 multipliers = torch.FloatTensor(multipliers)
+
+indices = np.argsort(mu_aligned)
+
+m1_aligned = m1_aligned[indices]
+m2_aligned = m2_aligned[indices]
+mu_aligned = mu_aligned[indices]
+multipliers = multipliers[indices]
+
 print("transformation rule is computed")
 
 def get_input(BATCH_SIZE, N_FEATURES, active_dim, device):

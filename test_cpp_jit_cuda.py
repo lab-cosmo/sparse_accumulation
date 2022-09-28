@@ -2,13 +2,13 @@ from time import time
 
 import torch
 from torch.utils import cpp_extension
-
+import numpy as np
 from clebsch_gordan import ClebschGordan, get_real_clebsch_gordan
 from sparse_accumulation_plain_torch import sparse_accumulation_loops
 
 cpp_extension.load(
     name="sparse_accumulation_cuda",
-    sources=["cuda_optimized/sparse_accumulation_cuda_kernel2D.cu"],
+    sources=["cuda_grouped/sparse_accumulation_cuda_kernel2D.cu"],
     is_python_module=False,
     extra_cuda_cflags=None,
     verbose=True,
@@ -33,7 +33,12 @@ def get_rule(L_MAX):
     m2_aligned = torch.LongTensor(m2_aligned)
     mu_aligned = torch.LongTensor(mu_aligned)
     multipliers = torch.tensor(multipliers, dtype=torch.float64)
+    indices = np.argsort(mu_aligned)
 
+    m1_aligned = m1_aligned[indices]
+    m2_aligned = m2_aligned[indices]
+    mu_aligned = mu_aligned[indices]
+    multipliers = multipliers[indices]
     print("done generating CG rule")
 
     return m1_aligned, m2_aligned, mu_aligned, multipliers
@@ -236,5 +241,5 @@ if __name__ == "__main__":
     test_forward(L_MAX=5, BATCH_SIZE=2000, N_FEATURES=105, atol=1e-16, rtol=1e-8)
     # test_forward(L_MAX=10,BATCH_SIZE=2000,N_FEATURES=105,atol = 1e-10)
     # test_forward(L_MAX=50,BATCH_SIZE=10,N_FEATURES=10)
-    test_backward(L_MAX=5, BATCH_SIZE=20, N_FEATURES=20, atol=1e-16, rtol=1e-8)
-    test_backward(L_MAX=5, BATCH_SIZE=2000, N_FEATURES=105, atol=1e-16, rtol=1e-8)
+    #test_backward(L_MAX=5, BATCH_SIZE=20, N_FEATURES=20, atol=1e-16, rtol=1e-8)
+    #test_backward(L_MAX=5, BATCH_SIZE=2000, N_FEATURES=105, atol=1e-16, rtol=1e-8)
