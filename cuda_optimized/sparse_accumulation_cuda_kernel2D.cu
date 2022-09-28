@@ -111,7 +111,8 @@ __global__ void sparse_accumulation_cuda_forward_kernel(
             now += buffer_X1_final[z_X1]
                                            * buffer_X2_final[z_X2]
                                            * buffer_multipliers[z];
-          };
+        };
+        output_final[z_old] = now;
     };
 }
 

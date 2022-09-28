@@ -8,7 +8,7 @@ from sparse_accumulation_plain_torch import sparse_accumulation_loops
 
 cpp_extension.load(
     name="sparse_accumulation_cuda",
-    sources=["cuda_grouped/sparse_accumulation_cuda_kernel2D.cu"],
+    sources=["cuda_optimized/sparse_accumulation_cuda_kernel2D.cu"],
     is_python_module=False,
     extra_cuda_cflags=None,
     verbose=True,
@@ -63,6 +63,14 @@ def get_rule_gpu(L_MAX):
     # multipliers = torch.tensor(multipliers,dtype=torch.float64,device='cuda')
     multipliers = torch.tensor(multipliers, dtype=torch.float64, device="cuda")
 
+    indices = np.argsort(mu_aligned)
+
+    m1_aligned = m1_aligned[indices]
+    m2_aligned = m2_aligned[indices]
+    mu_aligned = mu_aligned[indices]
+    multipliers = multipliers[indices]
+    print("done generating CG rule")
+    
     return m1_aligned, m2_aligned, mu_aligned, multipliers
 
 
@@ -125,9 +133,9 @@ def test_forward(L_MAX, BATCH_SIZE, N_FEATURES, atol=1e-7, rtol=1e-8):
         print(f"{cuda_output=}")
         print(f"{python_loops_output=}")
 
-        errmax = torch.amax(torch.abs(delta))
-        print(f"{errmax=}")
-        print(f"{torch.amin(torch.abs(cuda_output_cpu))=}")
+    errmax = torch.amax(torch.abs(delta))
+    print(f"{errmax=}")
+    print(f"{torch.amin(torch.abs(cuda_output_cpu))=}")
 
     assert torch.allclose(python_loops_output, cuda_output_cpu, atol=atol, rtol=rtol)
     # print(f"{python_time=} s")
