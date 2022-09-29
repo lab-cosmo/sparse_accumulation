@@ -233,6 +233,12 @@ def test_backward(L_MAX, BATCH_SIZE, N_FEATURES, atol=1e-7, rtol=1e-8):
     print(f"{torch.amin(torch.abs(X1_grad_cuda))=}")
     print(f"{errmax2=}")
     print(f"{torch.amin(torch.abs(X2_grad_cuda))=}")
+    
+    # print(f"{X1_grad_cuda=}")
+    # print(f"{X1_grad_python_loops=}")
+    
+    # print(f"{X2_grad_cuda=}")
+    # print(f"{X2_grad_python_loops=}")
     # assert torch.allclose(python_loops_output , cuda_output_cpu,atol=atol)
     print(f"{python_time=} s")
     print(f"{cuda_time=} s")
@@ -252,7 +258,8 @@ def test_backward_gradcheck(function, L_MAX, BATCH_SIZE, N_FEATURES, device):
     multipliers = multipliers.to(device=device)
 
     generator = torch.Generator(device=device)
-    generator.manual_seed(0xDEADBEEF)
+    #generator.manual_seed(0xDEADBEEF)
+    generator.manual_seed(30)
     X1 = torch.randn(
         (BATCH_SIZE, N_FEATURES, 2 * L_MAX + 1),
         requires_grad=True,
@@ -313,6 +320,7 @@ if __name__ == "__main__":
     test_forward(L_MAX=5, BATCH_SIZE=2000, N_FEATURES=105, atol=1e-16, rtol=1e-8)
     # test_forward(L_MAX=10, BATCH_SIZE=2000, N_FEATURES=105, atol=1e-10)
     # test_forward(L_MAX=50, BATCH_SIZE=10, N_FEATURES=10)
+    test_backward(L_MAX=2, BATCH_SIZE=1, N_FEATURES=1, atol=1e-16, rtol=1e-8)
     test_backward(L_MAX=5, BATCH_SIZE=20, N_FEATURES=20, atol=1e-16, rtol=1e-8)
     test_backward(L_MAX=5, BATCH_SIZE=2000, N_FEATURES=105, atol=1e-16, rtol=1e-8)
 
@@ -331,8 +339,8 @@ if __name__ == "__main__":
 
     test_backward_gradcheck(
         CudaSparseAccumulationFunction.apply,
-        L_MAX=7,
-        BATCH_SIZE=100,
-        N_FEATURES=234,
+        L_MAX=5,
+        BATCH_SIZE=2000,
+        N_FEATURES=105,
         device="cuda",
     )
