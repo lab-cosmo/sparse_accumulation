@@ -27,8 +27,6 @@ __global__ void sparse_accumulation_cuda_forward_kernel(
     extern __shared__ char buffer[];
     // offset (in bytes) of the first available slot in the shared memory buffer
     size_t offset = 0;
-    scalar_t* buffer_output = reinterpret_cast<scalar_t*>(buffer + offset);
-    offset += BLOCK_SIZE * BLOCK_SIZE * output_size * sizeof(scalar_t);
 
     scalar_t* buffer_X1 = reinterpret_cast<scalar_t*>(buffer + offset);
     offset += BLOCK_SIZE * BLOCK_SIZE * X1_third_size * sizeof(scalar_t);
@@ -63,7 +61,7 @@ __global__ void sparse_accumulation_cuda_forward_kernel(
     int delta_now_output = j * output_size + i * ny * output_size;
     int delta_now_X2 = j * X2_third_size + i * ny * X2_third_size;
 
-    int delta_buffer_output = (BLOCK_SIZE * threadIdx.x + threadIdx.y) * output_size;
+   
     int delta_buffer_X1 = (BLOCK_SIZE * threadIdx.x + threadIdx.y) * X1_third_size;
     int delta_buffer_X2 = (BLOCK_SIZE * threadIdx.x + threadIdx.y) * X2_third_size;
 
@@ -73,7 +71,7 @@ __global__ void sparse_accumulation_cuda_forward_kernel(
         buffer_idx_X1[active_index] = idx_1[active_index];
         buffer_idx_X2[active_index] = idx_2[active_index];
     }
-    scalar_t* buffer_output_final = buffer_output + delta_buffer_output;
+    
     scalar_t* buffer_X1_final = buffer_X1 + delta_buffer_X1;
     scalar_t* buffer_X2_final = buffer_X2 + delta_buffer_X2;
 
@@ -83,10 +81,6 @@ __global__ void sparse_accumulation_cuda_forward_kernel(
     __syncthreads();
 
     if (i < nx && j < ny) {
-        //printf("in kernel i %d  j %d\n",i,j) ;
-        for (int z_output = 0; z_output < output_size; ++z_output) {
-            buffer_output_final[z_output] = 0.0;
-        }
 
         for (int X1_index = 0; X1_index < X1_third_size; ++X1_index) {
             buffer_X1_final[X1_index] = X1_final[X1_index];
@@ -200,13 +194,12 @@ std::vector<torch::Tensor> sparse_accumulation_cuda_forward(
 
 
   AT_DISPATCH_FLOATING_TYPES(output.type(), "sparse_accumulation_forward_cuda", ([&] {
-      size_t output_buf_size = BLOCK_SIZE * BLOCK_SIZE * output_size * sizeof(scalar_t);
       size_t X1_buf_size = BLOCK_SIZE * BLOCK_SIZE * X1_third_size * sizeof(scalar_t);
       size_t X2_buf_size = BLOCK_SIZE * BLOCK_SIZE * X2_third_size * sizeof(scalar_t);
       size_t multipliers_size = multipliers.sizes()[0] * sizeof(scalar_t);
       size_t index_size = idx_output.sizes()[0] * sizeof(int32_t);
 
-      size_t total_buf_size = output_buf_size + X1_buf_size + X2_buf_size + multipliers_size + index_size * 3;
+      size_t total_buf_size = X1_buf_size + X2_buf_size + multipliers_size + index_size * 3;
 
       sparse_accumulation_cuda_forward_kernel<<<grid_dim, block_dim, total_buf_size>>>(
           output.data_ptr<scalar_t>(),
