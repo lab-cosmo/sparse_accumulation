@@ -70,7 +70,7 @@ def get_rule_gpu(L_MAX):
     mu_aligned = mu_aligned[indices]
     multipliers = multipliers[indices]
     print("done generating CG rule")
-    
+
     return m1_aligned, m2_aligned, mu_aligned, multipliers
 
 
@@ -241,13 +241,96 @@ def test_backward(L_MAX, BATCH_SIZE, N_FEATURES, atol=1e-7, rtol=1e-8):
     print()
 
 
+def test_backward_gradcheck(function, L_MAX, BATCH_SIZE, N_FEATURES, device):
+
+    m1_aligned, m2_aligned, mu_aligned, multipliers = get_rule(L_MAX)
+    m1_aligned = m1_aligned.to(device=device)
+    m2_aligned = m2_aligned.to(device=device)
+    mu_aligned = mu_aligned.to(device=device)
+    multipliers = multipliers.to(device=device)
+
+    generator = torch.Generator(device=device)
+    generator.manual_seed(0xDEADBEEF)
+    X1 = torch.randn(
+        (BATCH_SIZE, N_FEATURES, 2 * L_MAX + 1),
+        requires_grad=True,
+        generator=generator,
+        dtype=torch.float64,
+        device=device,
+    )
+    X2 = torch.randn(
+        (BATCH_SIZE, N_FEATURES, 2 * L_MAX + 1),
+        requires_grad=True,
+        generator=generator,
+        dtype=torch.float64,
+        device=device,
+    )
+
+    torch.autograd.gradcheck(
+        function,
+        (X1, X2, mu_aligned, 2 * L_MAX + 1, m1_aligned, m2_aligned, multipliers),
+        fast_mode=True,
+    )
+
+    print("torch.autograd.gradcheck passed\n")
+
+
+class CudaSparseAccumulationFunction(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, X1, X2, mu, output_size, m1, m2, multipliers):
+        (output,) = torch.ops.sparse_accumulation_cuda.forward(
+            X1,
+            X2,
+            mu,
+            output_size,
+            m1,
+            m2,
+            multipliers,
+        )
+
+        ctx.save_for_backward(X1, X2, mu, m1, m2, multipliers)
+
+        return output
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        X1, X2, mu, m1, m2, multipliers = ctx.saved_tensors
+
+        X1_grad, X2_grad = torch.ops.sparse_accumulation_cuda.backward(
+            grad_output, X1, X2, mu, m1, m2, multipliers
+        )
+
+        return X1_grad, X2_grad, None, None, None, None, None
+
+
 if __name__ == "__main__":
-    # test_forward(L_MAX=5,BATCH_SIZE=20,N_FEATURES=20,atol = 1e-16,rtol=1e-8)
-    test_forward(L_MAX=2, BATCH_SIZE=1, N_FEATURES=1, atol=1e-16, rtol=1e-8)
-    # test_forward(L_MAX=1,BATCH_SIZE=1,N_FEATURES=1,atol = 1e-16,rtol=1e-8)
-    test_forward(L_MAX=10, BATCH_SIZE=1, N_FEATURES=1, atol=1e-16, rtol=1e-8)
+    test_forward(L_MAX=5, BATCH_SIZE=20, N_FEATURES=20, atol=1e-16, rtol=1e-8)
+    # test_forward(L_MAX=2, BATCH_SIZE=1, N_FEATURES=1, atol=1e-16, rtol=1e-8)
+    # test_forward(L_MAX=1, BATCH_SIZE=1, N_FEATURES=1, atol=1e-16, rtol=1e-8)
+    # test_forward(L_MAX=10, BATCH_SIZE=1, N_FEATURES=1, atol=1e-16, rtol=1e-8)
     test_forward(L_MAX=5, BATCH_SIZE=2000, N_FEATURES=105, atol=1e-16, rtol=1e-8)
-    # test_forward(L_MAX=10,BATCH_SIZE=2000,N_FEATURES=105,atol = 1e-10)
-    # test_forward(L_MAX=50,BATCH_SIZE=10,N_FEATURES=10)
-    #test_backward(L_MAX=5, BATCH_SIZE=20, N_FEATURES=20, atol=1e-16, rtol=1e-8)
-    #test_backward(L_MAX=5, BATCH_SIZE=2000, N_FEATURES=105, atol=1e-16, rtol=1e-8)
+    # test_forward(L_MAX=10, BATCH_SIZE=2000, N_FEATURES=105, atol=1e-10)
+    # test_forward(L_MAX=50, BATCH_SIZE=10, N_FEATURES=10)
+    test_backward(L_MAX=5, BATCH_SIZE=20, N_FEATURES=20, atol=1e-16, rtol=1e-8)
+    test_backward(L_MAX=5, BATCH_SIZE=2000, N_FEATURES=105, atol=1e-16, rtol=1e-8)
+
+    def sparse_accumulation_loops_dim_2(X1, X2, mu, output_size, m1, m2, multipliers):
+        return sparse_accumulation_loops(
+            X1, X2, mu, output_size, m1, m2, multipliers, active_dim=2
+        )
+
+    test_backward_gradcheck(
+        sparse_accumulation_loops_dim_2,
+        L_MAX=7,
+        BATCH_SIZE=100,
+        N_FEATURES=234,
+        device="cpu",
+    )
+
+    test_backward_gradcheck(
+        CudaSparseAccumulationFunction.apply,
+        L_MAX=7,
+        BATCH_SIZE=100,
+        N_FEATURES=234,
+        device="cuda",
+    )
