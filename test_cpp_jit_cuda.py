@@ -54,9 +54,9 @@ def get_rule(L_MAX, device="cpu"):
     return m1_aligned, m2_aligned, mu_aligned, multipliers
 
 
-@pytest.mark.parametrize("L_MAX", [5, 8])
-@pytest.mark.parametrize("BATCH_SIZE", [20, 2000])
-@pytest.mark.parametrize("N_FEATURES", [20, 105])
+@pytest.mark.parametrize("L_MAX", [1, 5, 8])
+@pytest.mark.parametrize("BATCH_SIZE", [1, 20, 2000])
+@pytest.mark.parametrize("N_FEATURES", [1, 20, 105])
 def test_forward(L_MAX, BATCH_SIZE, N_FEATURES, atol=1e-7, rtol=1e-8):
     m1_aligned, m2_aligned, mu_aligned, multipliers = get_rule(L_MAX)
     print(f"forward {L_MAX=}, {BATCH_SIZE=}, {N_FEATURES=}")
@@ -122,9 +122,9 @@ def test_forward(L_MAX, BATCH_SIZE, N_FEATURES, atol=1e-7, rtol=1e-8):
 
 
 @pytest.mark.parametrize("seed", [30, 42])
-@pytest.mark.parametrize("L_MAX", [5, 8])
-@pytest.mark.parametrize("BATCH_SIZE", [20, 2000])
-@pytest.mark.parametrize("N_FEATURES", [20, 105])
+@pytest.mark.parametrize("L_MAX", [1, 5, 8])
+@pytest.mark.parametrize("BATCH_SIZE", [1, 20, 2000])
+@pytest.mark.parametrize("N_FEATURES", [1, 20, 105])
 def test_backward(L_MAX, BATCH_SIZE, N_FEATURES, seed, atol=1e-7, rtol=1e-8):
     print(f"backward {L_MAX=}, {BATCH_SIZE=}, {N_FEATURES=}")
     m1_aligned, m2_aligned, mu_aligned, multipliers = get_rule(L_MAX)
@@ -205,6 +205,12 @@ def test_backward(L_MAX, BATCH_SIZE, N_FEATURES, seed, atol=1e-7, rtol=1e-8):
     print(f"{torch.amin(torch.abs(X1_grad_cuda))=}")
     print(f"{errmax2=}")
     print(f"{torch.amin(torch.abs(X2_grad_cuda))=}")
+    
+    # print(f"{X1_grad_cuda=}")
+    # print(f"{X1_grad_python_loops=}")
+    
+    # print(f"{X2_grad_cuda=}")
+    # print(f"{X2_grad_python_loops=}")
     # assert torch.allclose(python_loops_output , cuda_output_cpu,atol=atol)
     print(f"{python_time=} s")
     print(f"{cuda_time=} s")
@@ -251,9 +257,9 @@ class CudaSparseAccumulationFunction(torch.autograd.Function):
     partial(sparse_accumulation_loops, active_dim=2),
     CudaSparseAccumulationFunction.apply
 ])
-@pytest.mark.parametrize("L_MAX", [5, 8])
-@pytest.mark.parametrize("BATCH_SIZE", [20, 2000])
-@pytest.mark.parametrize("N_FEATURES", [20, 105])
+@pytest.mark.parametrize("L_MAX", [1, 5, 8])
+@pytest.mark.parametrize("BATCH_SIZE", [1, 20, 2000])
+@pytest.mark.parametrize("N_FEATURES", [1, 20, 105])
 @pytest.mark.parametrize("device", ['cpu', 'cuda'])
 def test_backward_gradcheck(function, L_MAX, BATCH_SIZE, N_FEATURES, device):
     if device == 'cpu' and function == CudaSparseAccumulationFunction.apply:
