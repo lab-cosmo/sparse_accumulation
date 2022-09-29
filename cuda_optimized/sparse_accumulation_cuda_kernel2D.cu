@@ -237,8 +237,9 @@ __global__ void sparse_accumulation_cuda_backward_kernel(
         }
 
         int z_output, z_X1, z_X2;
-        scalar_t now = 0;
+        //scalar_t now = 0;
         int z_old = 0;
+        scalar_t grad_multi;
         for (int z = 0 ; z < nz ; ++z){
             z_output = buffer_idx_output[z];
             // if (z_old != z_output) {
@@ -248,18 +249,25 @@ __global__ void sparse_accumulation_cuda_backward_kernel(
             // }
             z_X1 = buffer_idx_X1[z];
             z_X2 = buffer_idx_X2[z];
-            auto grad_multi = buffer_output_final[z_output] * buffer_multipliers[z];
+            grad_multi = buffer_output_final[z_output] * buffer_multipliers[z];
             buffer_d_X1_final[z_X1] += grad_multi * buffer_X2_final[z_X2];
                                            
             buffer_d_X2_final[z_X2] += grad_multi * buffer_X1_final[z_X1];
         };
         //output_final[z_old] = now;
-        for (int z = 0 ; z < nz ; ++z){
+        for (int z = 0; z < X1_third_size; ++z) {
+            d_X1_final[z] = buffer_d_X1_final[z];
+        }
+
+        for (int z = 0; z < X2_third_size; ++z) {
+            d_X2_final[z] = buffer_d_X2_final[z];
+        }
+        /*for (int z = 0 ; z < nz ; ++z){
             z_X1 = buffer_idx_X1[z];
             z_X2 = buffer_idx_X2[z];
             d_X2_final[z_X2] = buffer_d_X2_final[z_X2];
             d_X1_final[z_X1] = buffer_d_X1_final[z_X1];
-        }
+        }*/
         
 
     };
