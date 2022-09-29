@@ -59,6 +59,7 @@ def get_rule(L_MAX, device="cpu"):
 @pytest.mark.parametrize("N_FEATURES", [20, 105])
 def test_forward(L_MAX, BATCH_SIZE, N_FEATURES, atol=1e-7, rtol=1e-8):
     m1_aligned, m2_aligned, mu_aligned, multipliers = get_rule(L_MAX)
+    print(f"forward {L_MAX=}, {BATCH_SIZE=}, {N_FEATURES=}")
 
     m1_aligned_d = m1_aligned.clone().cuda()
     m2_aligned_d = m2_aligned.clone().cuda()
