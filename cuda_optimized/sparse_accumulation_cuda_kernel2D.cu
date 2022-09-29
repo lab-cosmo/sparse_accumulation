@@ -134,23 +134,143 @@ __global__ void sparse_accumulation_cuda_backward_kernel(
     const int ny,
     const int nz
     ) {
-    int i = threadIdx.x + blockDim.x * blockIdx.x ;
-    int j = threadIdx.y + blockDim.y * blockIdx.y ;
+    extern __shared__ char buffer[];
+    // offset (in bytes) of the first available slot in the shared memory buffer
+    size_t offset = 0;
+    scalar_t* buffer_output = reinterpret_cast<scalar_t*>(buffer + offset);
+    offset += BLOCK_SIZE * BLOCK_SIZE * output_size * sizeof(scalar_t);
 
-    if (i<nx && j<ny) {
-      for (auto z = 0 ; z < nz ; ++z){
-        int z_output = idx_output[z];
-        int z_X1 = idx_1[z] ;
-        int z_X2 = idx_2[z] ;
+    scalar_t* buffer_X1 = reinterpret_cast<scalar_t*>(buffer + offset);
+    offset += BLOCK_SIZE * BLOCK_SIZE * X1_third_size * sizeof(scalar_t);
 
-        int pos_X1 = z_X1 + j*X1_third_size + i*ny*X1_third_size ;
-        int pos_output = z_output+ j*output_size+  i*output_size*ny ;
-        int pos_X2 = z_X2 + j*X2_third_size + i*ny*X2_third_size ;
-        auto grad_multi = d_output[pos_output] * multipliers[z];
-        d_X1[pos_X1] += grad_multi*X2[pos_X2];
-        d_X2[pos_X2] += grad_multi*X1[pos_X1];
-      };
+    scalar_t* buffer_X2 = reinterpret_cast<scalar_t*>(buffer + offset);
+    offset += BLOCK_SIZE * BLOCK_SIZE * X2_third_size * sizeof(scalar_t);
+
+    scalar_t* buffer_d_X1 = reinterpret_cast<scalar_t*>(buffer + offset);
+    offset += BLOCK_SIZE * BLOCK_SIZE * X1_third_size * sizeof(scalar_t);
+
+    scalar_t* buffer_d_X2 = reinterpret_cast<scalar_t*>(buffer + offset);
+    offset += BLOCK_SIZE * BLOCK_SIZE * X2_third_size * sizeof(scalar_t);
+
+    scalar_t* buffer_multipliers = reinterpret_cast<scalar_t*>(buffer + offset);
+    offset += nz * sizeof(scalar_t);
+
+    int32_t* buffer_idx_output = reinterpret_cast<int32_t*>(buffer + offset);
+    offset += nz * sizeof(int32_t);
+
+    int32_t* buffer_idx_X1 = reinterpret_cast<int32_t*>(buffer + offset);
+    offset += nz * sizeof(int32_t);
+
+    int32_t* buffer_idx_X2 = reinterpret_cast<int32_t*>(buffer + offset);
+    offset += nz * sizeof(int32_t);
+
+    int i = threadIdx.x + blockDim.x * blockIdx.x;
+    int j = threadIdx.y + blockDim.y * blockIdx.y;
+
+    int single_multipliers_block_size = (nz / (BLOCK_SIZE * BLOCK_SIZE)) + 1;
+    int total_thread_idx = threadIdx.x * BLOCK_SIZE + threadIdx.y;
+    int multipliers_pos_from = total_thread_idx * single_multipliers_block_size;
+    int multipliers_pos_to = (total_thread_idx + 1) * single_multipliers_block_size;
+    if (multipliers_pos_to > nz) {
+        multipliers_pos_to = nz;
+    }
+
+    int delta_now_X1 = j * X1_third_size + i * ny * X1_third_size;
+    int delta_now_output = j * output_size + i * ny * output_size;
+    int delta_now_X2 = j * X2_third_size + i * ny * X2_third_size;
+    int delta_now_d_X1 = j * X1_third_size + i * ny * X1_third_size;
+    int delta_now_d_X2 = j * X2_third_size + i * ny * X2_third_size;
+
+    int delta_buffer_output = (BLOCK_SIZE * threadIdx.x + threadIdx.y) * output_size;
+    int delta_buffer_X1 = (BLOCK_SIZE * threadIdx.x + threadIdx.y) * X1_third_size;
+    int delta_buffer_X2 = (BLOCK_SIZE * threadIdx.x + threadIdx.y) * X2_third_size;
+    int delta_buffer_d_X1 = (BLOCK_SIZE * threadIdx.x + threadIdx.y) * X1_third_size;
+    int delta_buffer_d_X2 = (BLOCK_SIZE * threadIdx.x + threadIdx.y) * X2_third_size;
+
+
+    for (int active_index = multipliers_pos_from; active_index < multipliers_pos_to; ++active_index) {
+        buffer_multipliers[active_index] = multipliers[active_index];
+        buffer_idx_output[active_index] = idx_output[active_index];
+        buffer_idx_X1[active_index] = idx_1[active_index];
+        buffer_idx_X2[active_index] = idx_2[active_index];
+    }
+    scalar_t* buffer_output_final = buffer_output + delta_buffer_output;
+    scalar_t* buffer_X1_final = buffer_X1 + delta_buffer_X1;
+    scalar_t* buffer_X2_final = buffer_X2 + delta_buffer_X2;
+    scalar_t* buffer_d_X1_final = buffer_d_X1 + delta_buffer_d_X1;
+    scalar_t* buffer_d_X2_final = buffer_d_X2 + delta_buffer_d_X2;
+
+    auto d_output_final = d_output + delta_now_output;
+    auto X1_final = X1 + delta_now_X1;
+    auto X2_final = X2 + delta_now_X2;
+    auto d_X1_final = d_X1 + delta_now_X1;
+    auto d_X2_final = d_X2 + delta_now_X2;
+    __syncthreads();
+
+
+
+    // int i = threadIdx.x + blockDim.x * blockIdx.x ;
+    // int j = threadIdx.y + blockDim.y * blockIdx.y ;
+
+    // if (i<nx && j<ny) {
+    //   for (auto z = 0 ; z < nz ; ++z){
+    //     int z_output = idx_output[z];
+    //     int z_X1 = idx_1[z] ;
+    //     int z_X2 = idx_2[z] ;
+
+    //     int pos_X1 = z_X1 + j*X1_third_size + i*ny*X1_third_size ;
+    //     int pos_output = z_output+ j*output_size+  i*output_size*ny ;
+    //     int pos_X2 = z_X2 + j*X2_third_size + i*ny*X2_third_size ;
+    //     auto grad_multi = d_output[pos_output] * multipliers[z];
+    //     d_X1[pos_X1] += grad_multi*X2[pos_X2];
+    //     d_X2[pos_X2] += grad_multi*X1[pos_X1];
+    //   };
+    // };
+ if (i < nx && j < ny) {
+        //printf("in kernel i %d  j %d\n",i,j) ;
+        for (int z_output = 0; z_output < output_size; ++z_output) {
+            buffer_output_final[z_output] = d_output_final[z_output];
+        }
+
+        for (int X1_index = 0; X1_index < X1_third_size; ++X1_index) {
+            buffer_X1_final[X1_index] = X1_final[X1_index];
+            buffer_d_X1_final[X1_index] = 0;
+        }
+
+        for (int X2_index = 0; X2_index < X2_third_size; ++X2_index) {
+            buffer_X2_final[X2_index] = X2_final[X2_index];
+            buffer_d_X2_final[X2_index] = 0;
+        }
+
+        int z_output, z_X1, z_X2;
+        scalar_t now = 0;
+        int z_old = 0;
+        for (int z = 0 ; z < nz ; ++z){
+            z_output = buffer_idx_output[z];
+            // if (z_old != z_output) {
+            //     output_final[z_old] = now;
+            //     now = 0;
+            //     z_old = z_output;
+            // }
+            z_X1 = buffer_idx_X1[z];
+            z_X2 = buffer_idx_X2[z];
+            auto grad_multi = buffer_output_final[z_old] * buffer_multipliers[z];
+            buffer_d_X1_final[z_X1] += grad_multi * buffer_X2_final[z_X2];
+                                           
+            buffer_d_X2_final[z_X2] += grad_multi * buffer_X2_final[z_X1];
+        };
+        //output_final[z_old] = now;
+        for (int z = 0 ; z < nz ; ++z){
+            z_X1 = buffer_idx_X1[z];
+            z_X2 = buffer_idx_X2[z];
+            d_X2_final[z_X2] = buffer_d_X2_final[z_X2];
+            d_X1_final[z_X1] = buffer_d_X1_final[z_X1];
+        }
+        
+
     };
+
+
   }
 
 
@@ -254,7 +374,14 @@ std::vector<torch::Tensor> sparse_accumulation_cuda_backward(
     dim3 grid_dim(nbx, nby);
 
     AT_DISPATCH_FLOATING_TYPES(X1.type(), "sparse_accumulation_backward_cuda", ([&] {
-        sparse_accumulation_cuda_backward_kernel<<<grid_dim, block_dim>>>(
+        size_t output_buf_size = BLOCK_SIZE * BLOCK_SIZE * output_size * sizeof(scalar_t);
+        size_t X1_buf_size = BLOCK_SIZE * BLOCK_SIZE * X1_third_size * sizeof(scalar_t);
+        size_t X2_buf_size = BLOCK_SIZE * BLOCK_SIZE * X2_third_size * sizeof(scalar_t);
+        size_t multipliers_size = multipliers.sizes()[0] * sizeof(scalar_t);
+        size_t index_size = idx_output.sizes()[0] * sizeof(int32_t);
+
+        size_t total_buf_size = output_buf_size + 2*X1_buf_size + 2*X2_buf_size + multipliers_size + index_size * 3;
+        sparse_accumulation_cuda_backward_kernel<<<grid_dim, block_dim,total_buf_size>>>(
             d_X1.data_ptr<scalar_t>(),
             d_X2.data_ptr<scalar_t>(),
             d_output.data_ptr<scalar_t>(),

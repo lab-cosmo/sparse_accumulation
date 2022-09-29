@@ -127,6 +127,8 @@ def test_forward(L_MAX, BATCH_SIZE, N_FEATURES, atol=1e-7, rtol=1e-8):
     assertion = torch.allclose(
         python_loops_output, cuda_output_cpu, atol=atol, rtol=rtol
     )
+    print(f"forward {L_MAX=}, {BATCH_SIZE=}, {N_FEATURES=}")
+    
     if not assertion:
         print("assertion failed")
 
