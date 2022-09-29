@@ -126,8 +126,9 @@ def test_forward(L_MAX, BATCH_SIZE, N_FEATURES, atol=1e-7, rtol=1e-8):
 @pytest.mark.parametrize("BATCH_SIZE", [20, 2000])
 @pytest.mark.parametrize("N_FEATURES", [20, 105])
 def test_backward(L_MAX, BATCH_SIZE, N_FEATURES, seed, atol=1e-7, rtol=1e-8):
-
+    print(f"backward {L_MAX=}, {BATCH_SIZE=}, {N_FEATURES=}")
     m1_aligned, m2_aligned, mu_aligned, multipliers = get_rule(L_MAX)
+
     m1_aligned_d = m1_aligned.clone().cuda()
     m2_aligned_d = m2_aligned.clone().cuda()
     mu_aligned_d = mu_aligned.clone().cuda()
@@ -198,14 +199,6 @@ def test_backward(L_MAX, BATCH_SIZE, N_FEATURES, seed, atol=1e-7, rtol=1e-8):
     X1_grad_cuda = cuda_output[0].cpu()
     X2_grad_cuda = cuda_output[1].cpu()
 
-    print(f"backward {L_MAX=}, {BATCH_SIZE=}, {N_FEATURES=}")
-
-    assertion1 = torch.allclose(
-        X1_grad_python_loops, X1_grad_cuda, atol=atol, rtol=rtol
-    )
-    assertion2 = torch.allclose(
-        X2_grad_python_loops, X2_grad_cuda, atol=atol, rtol=rtol
-    )
     errmax1 = torch.amax(torch.abs(X1_grad_python_loops - X1_grad_cuda))
     errmax2 = torch.amax(torch.abs(X2_grad_python_loops - X2_grad_cuda))
     print(f"{errmax1=}")
@@ -217,9 +210,13 @@ def test_backward(L_MAX, BATCH_SIZE, N_FEATURES, seed, atol=1e-7, rtol=1e-8):
     print(f"{cuda_time=} s")
     print(f"{cuda_Event_time=} s")
     print(f"python_time/cuda_time = {python_time/cuda_time} ")
-    if (not assertion1) or (not assertion2):
-        print("!! assertion FAILED")
-    print()
+
+    assert torch.allclose(
+        X1_grad_python_loops, X1_grad_cuda, atol=atol, rtol=rtol
+    )
+    assert torch.allclose(
+        X2_grad_python_loops, X2_grad_cuda, atol=atol, rtol=rtol
+    )
 
 
 class CudaSparseAccumulationFunction(torch.autograd.Function):
