@@ -26,7 +26,7 @@ cpp_extension.load(
     verbose=True,
 )
 
-L_MAX = 8
+L_MAX = 5
 BATCH_SIZE = 10000
 N_FEATURES = 200
 
@@ -192,14 +192,40 @@ def benchmark_backward_cpu(BATCH_SIZE, N_FEATURES, active_dim, function, n_trial
     X2.requires_grad = True
     times = []
     for _ in range(n_trials):
-        begin = time.time()
         output = function(
             X1, X2, mu_aligned, 2 * L_MAX + 1, m1_aligned, m2_aligned, multipliers
         )
+        begin = time.time()
         output.backward(gradient=torch.ones_like(output))
         times.append(time.time() - begin)
     return np.array(times)
 
+
+def benchmark_backward_matrix_multiply_gpu(BATCH_SIZE, N_FEATURES, active_dim, n_trials):
+    X1, X2 = get_input(BATCH_SIZE, N_FEATURES, active_dim, "cuda")
+
+    X1.requires_grad = True
+    X2.requires_grad = True
+    times = []
+
+    torch.cuda.synchronize("cuda")
+    starter, ender = torch.cuda.Event(enable_timing=True), torch.cuda.Event(
+        enable_timing=True
+    )
+
+    for _ in range(n_trials):
+        output = sparse_accumulation_matrix_multiply(
+            X1, X2, transformation
+        )
+        torch.cuda.synchronize("cuda")
+        starter.record()
+        output.backward(gradient=torch.ones_like(output))
+        
+        ender.record()
+        torch.cuda.synchronize("cuda")
+        delta_time = starter.elapsed_time(ender)
+        times.append(delta_time / 1000.0)
+    return np.array(times)
 
 def benchmark_backward_gpu(BATCH_SIZE, N_FEATURES, active_dim, function, n_trials):
     X1, X2 = get_input(BATCH_SIZE, N_FEATURES, active_dim, "cuda")
@@ -214,11 +240,13 @@ def benchmark_backward_gpu(BATCH_SIZE, N_FEATURES, active_dim, function, n_trial
     )
 
     for _ in range(n_trials):
-        starter.record()
         output = function(
             X1, X2, mu_aligned, 2 * L_MAX + 1, m1_aligned, m2_aligned, multipliers
         )
+        torch.cuda.synchronize("cuda")
+        starter.record()
         output.backward(gradient=torch.ones_like(output))
+        
         ender.record()
         torch.cuda.synchronize("cuda")
         delta_time = starter.elapsed_time(ender)
@@ -328,7 +356,7 @@ print("CUDA kernel; active dim 2; forward; cuda: ", np.mean(times[1:]))
 # )
 # print("CUDA kernel grpwrites; active dim 2; forward; cuda: ", np.mean(times[1:]))
 
-'''print("***backward***")
+print("***backward***")
 times = benchmark_backward_gpu(BATCH_SIZE, N_FEATURES, 0, 
                            get_func_fixed_dim(sparse_accumulation_loops, 0), 10)
 print("python loops; active dim 0; backward; cuda: ", np.mean(times[1:]))
@@ -336,7 +364,7 @@ times = benchmark_backward_gpu(BATCH_SIZE, N_FEATURES, 0,
                            get_func_fixed_dim(sparse_accumulation_index_add, 0), 10)
 print("torch index_add_; active dim 0; backward; cuda: ", np.mean(times[1:]))
 #times = benchmark_backward(BATCH_SIZE, N_FEATURES, 0,
-                           sparse_accumulation_active_dim_first.SparseAccumulationActiveDimFirst.apply, 10)
+#                           sparse_accumulation_active_dim_first.SparseAccumulationActiveDimFirst.apply, 10)
 #print("cpp; active dim 0; backward: ", np.mean(times[1:]))
 
 print()
@@ -362,6 +390,10 @@ print("torch index_add_; active dim 2; backward; cuda: ", np.mean(times[1:]))
 times = benchmark_backward_gpu_cuda(BATCH_SIZE, N_FEATURES, 2, 
                           torch.ops.sparse_accumulation_cuda.backward, 10)
 print("CUDA kernel; active dim 2; backward; cuda: ", np.mean(times[1:]))
+
+times = benchmark_backward_matrix_multiply_gpu(BATCH_SIZE, N_FEATURES, 2, 10)
+print("dense matrix multiply: ", np.mean(times[1:]))
+
+
 #times = benchmark_backward(BATCH_SIZE, N_FEATURES, 2, sparse_accumulation.SparseAccumulation.apply, 10)
-print("cpp; active dim 2; backward: ", np.mean(times[1:]))
-'''
+#print("cpp; active dim 2; backward: ", np.mean(times[1:]))
