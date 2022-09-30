@@ -172,14 +172,14 @@ __global__ void sparse_accumulation_cuda_backward_kernel(
     int delta_now_X1 = j * X1_third_size + i * ny * X1_third_size;
     int delta_now_output = j * output_size + i * ny * output_size;
     int delta_now_X2 = j * X2_third_size + i * ny * X2_third_size;
-    int delta_now_d_X1 = j * X1_third_size + i * ny * X1_third_size;
-    int delta_now_d_X2 = j * X2_third_size + i * ny * X2_third_size;
+    //int delta_now_d_X1 = j * X1_third_size + i * ny * X1_third_size;
+    //int delta_now_d_X2 = j * X2_third_size + i * ny * X2_third_size;
 
     int delta_buffer_output = (BLOCK_SIZE * threadIdx.x + threadIdx.y) * output_size;
     int delta_buffer_X1 = (BLOCK_SIZE * threadIdx.x + threadIdx.y) * X1_third_size;
     int delta_buffer_X2 = (BLOCK_SIZE * threadIdx.x + threadIdx.y) * X2_third_size;
-    int delta_buffer_d_X1 = (BLOCK_SIZE * threadIdx.x + threadIdx.y) * X1_third_size;
-    int delta_buffer_d_X2 = (BLOCK_SIZE * threadIdx.x + threadIdx.y) * X2_third_size;
+    //int delta_buffer_d_X1 = (BLOCK_SIZE * threadIdx.x + threadIdx.y) * X1_third_size;
+    //int delta_buffer_d_X2 = (BLOCK_SIZE * threadIdx.x + threadIdx.y) * X2_third_size;
 
 
     for (int active_index = multipliers_pos_from; active_index < multipliers_pos_to; ++active_index) {
@@ -191,8 +191,8 @@ __global__ void sparse_accumulation_cuda_backward_kernel(
     scalar_t* buffer_output_final = buffer_output + delta_buffer_output;
     scalar_t* buffer_X1_final = buffer_X1 + delta_buffer_X1;
     scalar_t* buffer_X2_final = buffer_X2 + delta_buffer_X2;
-    scalar_t* buffer_d_X1_final = buffer_d_X1 + delta_buffer_d_X1;
-    scalar_t* buffer_d_X2_final = buffer_d_X2 + delta_buffer_d_X2;
+    scalar_t* buffer_d_X1_final = buffer_d_X1 + delta_buffer_X1;
+    scalar_t* buffer_d_X2_final = buffer_d_X2 + delta_buffer_X2;
 
     auto d_output_final = d_output + delta_now_output;
     auto X1_final = X1 + delta_now_X1;
