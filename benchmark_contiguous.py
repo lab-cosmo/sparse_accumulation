@@ -3,13 +3,13 @@ import torch
 torch.set_num_threads(1)
 from clebsch_gordan import get_real_clebsch_gordan, ClebschGordan
 from sparse_accumulation_plain_torch import sparse_accumulation_loops, sparse_accumulation_index_add
-import sparse_accumulation, sparse_accumulation_active_dim_first,  sparse_accumulation_active_dim_middle
+from sparse_accumulation_cpu import sparse_accumulation_active_dim_last, sparse_accumulation_active_dim_first,  sparse_accumulation_active_dim_middle
 import numpy as np
 from torch.utils import cpp_extension
 
 cpp_extension.load(
     name="sparse_accumulation_cuda",
-    sources=["cuda/sparse_accumulation_cuda_kernel2D.cu"],
+    sources=["cuda_optimized/sparse_accumulation_cuda_kernel2D.cu"],
     is_python_module=False,
     extra_cuda_cflags=None,
     verbose=True,
@@ -293,7 +293,7 @@ times = benchmark_forward_cpu(BATCH_SIZE, N_FEATURES, 2, get_func_fixed_dim(spar
 print("python loops; active dim 2; forward; cpu:", np.mean(times[1:]))
 times = benchmark_forward_cpu(BATCH_SIZE, N_FEATURES, 2, get_func_fixed_dim(sparse_accumulation_index_add, 2), 10)
 print("torch index_add_; active dim 2; forward; cpu: ", np.mean(times[1:]))
-times = benchmark_forward_cpu(BATCH_SIZE, N_FEATURES, 2, sparse_accumulation.SparseAccumulation.apply, 10)
+times = benchmark_forward_cpu(BATCH_SIZE, N_FEATURES, 2, sparse_accumulation_active_dim_last.SparseAccumulationActiveDimLast.apply, 10)
 print("cpp; active dim 2; forward; cpu ", np.mean(times[1:]))
 print("***backward***")
 times = benchmark_backward_cpu(BATCH_SIZE, N_FEATURES, 0, 
@@ -326,5 +326,5 @@ print("python loops; active dim 2; backward; cpu ", np.mean(times[1:]))
 times = benchmark_backward_cpu(BATCH_SIZE, N_FEATURES, 2, 
                            get_func_fixed_dim(sparse_accumulation_index_add, 2), 10)
 print("torch index_add_; active dim 2; backward; cpu ", np.mean(times[1:]))
-times = benchmark_backward_cpu(BATCH_SIZE, N_FEATURES, 2, sparse_accumulation.SparseAccumulation.apply, 10)
+times = benchmark_backward_cpu(BATCH_SIZE, N_FEATURES, 2, sparse_accumulation_active_dim_last.SparseAccumulationActiveDimLast.apply, 10)
 print("cpp; active dim 2; backward; cpu ", np.mean(times[1:]))

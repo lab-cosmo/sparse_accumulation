@@ -3,7 +3,7 @@
 #include <iostream>
 using namespace torch::indexing;
 
-std::vector<torch::Tensor> sparse_accumulation_contiguous_backward(torch::Tensor d_output,
+std::vector<torch::Tensor> sparse_accumulation_active_dim_last_contiguous_backward(torch::Tensor d_output,
                                                         torch::Tensor X1,
                                                         torch::Tensor X2,
                                                         torch::Tensor idx_output,
@@ -56,7 +56,7 @@ std::vector<torch::Tensor> sparse_accumulation_contiguous_backward(torch::Tensor
 }
 
 
-torch::Tensor sparse_accumulation_contiguous_forward(torch::Tensor X1,
+torch::Tensor sparse_accumulation_active_dim_last_contiguous_forward(torch::Tensor X1,
                                   torch::Tensor X2,
                                   torch::Tensor idx_output,
                                   int output_size,
@@ -102,7 +102,7 @@ torch::Tensor sparse_accumulation_contiguous_forward(torch::Tensor X1,
 
 
 
-torch::Tensor sparse_accumulation_forward(torch::Tensor X1,
+torch::Tensor sparse_accumulation_active_dim_last_forward(torch::Tensor X1,
                                   torch::Tensor X2,
                                   torch::Tensor idx_output,
                                   int output_size,
@@ -138,7 +138,7 @@ torch::Tensor sparse_accumulation_forward(torch::Tensor X1,
     return output; 
 }
 
-std::vector<torch::Tensor> sparse_accumulation_backward(torch::Tensor d_output,
+std::vector<torch::Tensor> sparse_accumulation_active_dim_last_backward(torch::Tensor d_output,
                                                         torch::Tensor X1,
                                                         torch::Tensor X2,
                                                         torch::Tensor idx_output,
@@ -186,10 +186,10 @@ std::vector<torch::Tensor> sparse_accumulation_backward(torch::Tensor d_output,
 }
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-  m.def("forward", &sparse_accumulation_forward, "sparse accumulation forward");
-  m.def("forward_contiguous", &sparse_accumulation_contiguous_forward, "sparse accumulation contiguous forward");
-  m.def("backward", &sparse_accumulation_backward, "sparse accumulation backward");
-  m.def("backward_contiguous", &sparse_accumulation_contiguous_backward, "sparse accumulation contiguous backward");
+  m.def("forward", &sparse_accumulation_active_dim_last_forward, "sparse accumulation active dim last forward");
+  m.def("forward_contiguous", &sparse_accumulation_active_dim_last_contiguous_forward, "sparse accumulation active dim last contiguous forward");
+  m.def("backward", &sparse_accumulation_active_dim_last_backward, "sparse accumulation active dim last backward");
+  m.def("backward_contiguous", &sparse_accumulation_active_dim_last_contiguous_backward, "sparse accumulation active dim last contiguous backward");
 }
 
 

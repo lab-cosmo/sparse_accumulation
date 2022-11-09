@@ -4,9 +4,7 @@ import numpy as np
 import torch
 from torch.utils import cpp_extension
 
-import sparse_accumulation
-import sparse_accumulation_active_dim_first
-import sparse_accumulation_active_dim_middle
+from sparse_accumulation_cpu import sparse_accumulation_active_dim_last, sparse_accumulation_active_dim_first, sparse_accumulation_active_dim_middle
 from clebsch_gordan import ClebschGordan, get_real_clebsch_gordan
 from sparse_accumulation_plain_torch import (
     sparse_accumulation_index_add,

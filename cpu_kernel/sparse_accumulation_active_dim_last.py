@@ -1,14 +1,14 @@
 import torch
-import sparse_accumulation_cpp
+import sparse_accumulation_active_dim_last_cpp
 
-class SparseAccumulation(torch.autograd.Function):
+class SparseAccumulationActiveDimLast(torch.autograd.Function):
     @staticmethod
     def forward(ctx, X1, X2, idx_output, output_size, idx_1, idx_2, multipliers):
         all_contiguous = X1.is_contiguous() and X2.is_contiguous() and idx_output.is_contiguous() and idx_1.is_contiguous() and idx_2.is_contiguous() and multipliers.is_contiguous()
         if all_contiguous:
-            output = sparse_accumulation_cpp.forward_contiguous(X1, X2, idx_output, output_size, idx_1, idx_2, multipliers)
+            output = sparse_accumulation_active_dim_last_cpp.forward_contiguous(X1, X2, idx_output, output_size, idx_1, idx_2, multipliers)
         else:
-            output = sparse_accumulation_cpp.forward(X1, X2, idx_output, output_size, idx_1, idx_2, multipliers)
+            output = sparse_accumulation_active_dim_last_cpp.forward(X1, X2, idx_output, output_size, idx_1, idx_2, multipliers)
         ctx.save_for_backward(*[X1, X2, idx_output, idx_1, idx_2, multipliers])
         return output
         
@@ -18,7 +18,7 @@ class SparseAccumulation(torch.autograd.Function):
         X1, X2, idx_output, idx_1, idx_2, multipliers = ctx.saved_tensors
         all_contiguous = X1.is_contiguous() and X2.is_contiguous() and idx_output.is_contiguous() and idx_1.is_contiguous() and idx_2.is_contiguous() and multipliers.is_contiguous()
         if all_contiguous:
-            d_X1, d_X2 = sparse_accumulation_cpp.backward_contiguous(grad_output, X1, X2, idx_output, idx_1, idx_2, multipliers)
+            d_X1, d_X2 = sparse_accumulation_active_dim_last_cpp.backward_contiguous(grad_output, X1, X2, idx_output, idx_1, idx_2, multipliers)
         else:
-            d_X1, d_X2 = sparse_accumulation_cpp.backward(grad_output, X1, X2, idx_output, idx_1, idx_2, multipliers)
+            d_X1, d_X2 = sparse_accumulation_active_dim_last_cpp.backward(grad_output, X1, X2, idx_output, idx_1, idx_2, multipliers)
         return d_X1, d_X2, None, None, None, None, None
