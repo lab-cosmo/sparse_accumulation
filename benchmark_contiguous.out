@@ -1,0 +1,64 @@
+Using /home/pozdn/.cache/torch_extensions/py38_cu111 as PyTorch extensions root...
+Detected CUDA files, patching ldflags
+Emitting ninja build file /home/pozdn/.cache/torch_extensions/py38_cu111/sparse_accumulation_cuda/build.ninja...
+Building extension module sparse_accumulation_cuda...
+Allowing ninja to set a default number of workers... (overridable by setting the environment variable MAX_JOBS=N)
+ninja: no work to do.
+Loading extension module sparse_accumulation_cuda...
+L_MAX=8; BATCH_SIZE=1000; N_FEATURES=200
+preparing real life transformation rule
+transformation rule is computed
+*************
+CUDA
+*************
+***forward***
+python loops; active dim 0; forward; cuda:  0.02626611942715115
+torch index_add_; active dim 0; forward; cuda:  0.0067368142869737415
+
+python loops; active dim 1; forward; cuda:  0.028479398939344615
+torch index_add_; active dim 1; forward; cuda:  0.005996817800733778
+
+python loops first; active dim 2; forward; cuda:  0.09641836547851562
+torch index_add_ first; active dim 2; forward; cuda:  0.006406335830688476
+CUDA kernel first; active dim 2; forward; cuda:  0.0005303679704666138
+
+python loops; active dim 2; forward; cuda:  0.09575971052381728
+torch index_add_; active dim 2; forward; cuda:  0.006397336800893148
+CUDA kernel; active dim 2; forward; cuda:  0.0004992959996064504
+***backward***
+python loops; active dim 0; backward; cuda:  0.2310748816596137
+torch index_add_; active dim 0; backward; cuda:  0.015111829439798989
+
+python loops; active dim 1; backward; cuda:  0.3074806416829427
+torch index_add_; active dim 1; backward; cuda:  0.015122151056925456
+
+python loops; active dim 2; backward; cuda:  0.10060705057779948
+torch index_add_; active dim 2; backward; cuda:  0.10064567142062716
+CUDA kernel; active dim 2; backward; cuda:  0.001021127118004693
+*************
+CPU
+*************
+***forward***
+python loops; active dim 0; forward; cpu:  0.10445965660942926
+torch index_add_; active dim 0; forward; cpu:  0.4440735975901286
+cpp; active dim 0; forward; cpu:  0.04300083054436578
+
+python loops; active dim 1; forward; cpu:  0.13819887903001574
+torch index_add_; active dim 1; forward; cpu:  0.4437105390760634
+cpp; active dim 1; forward; cpu:  0.0679466724395752
+
+python loops; active dim 2; forward; cpu: 1.0245144102308485
+torch index_add_; active dim 2; forward; cpu:  1.4955637719896104
+cpp; active dim 2; forward; cpu  0.13358383708530003
+***backward***
+python loops; active dim 0; backward; cpu  6.009502304924859
+torch index_add_; active dim 0; backward; cpu  0.8905059761471219
+cpp; active dim 0; backward; cpu  0.1339370674557156
+
+python loops; active dim 1; backward; cpu  8.616596115960014
+torch index_add_; active dim 1; backward; cpu  0.9371486769782172
+cpp; active dim 1; backward; cpu  0.16515795389811197
+
+python loops; active dim 2; backward; cpu  3.100877947277493
+torch index_add_; active dim 2; backward; cpu  3.103803899553087
+cpp; active dim 2; backward; cpu  0.2753954463534885
