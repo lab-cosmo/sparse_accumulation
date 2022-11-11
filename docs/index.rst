@@ -1,7 +1,14 @@
 .. q
 
 
-.. include:: installation.rst   
+Installation
+------------
+
+.. include:: installation.rst
+
+Tests
+-----
+.. include:: tests.rst
 
 .. toctree::
    :glob:
