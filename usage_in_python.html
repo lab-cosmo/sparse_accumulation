@@ -49,10 +49,10 @@
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorial</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#Goal">Goal</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Reference-slow-implementation">Reference slow implementation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Fast-implementation">Fast implementation</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="#Reference-slow-implementation">Reference slow implementation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="#Fast-implementation">Fast implementation</a></li>
 </ul>
 
         </div>
@@ -375,9 +375,8 @@ div.rendered_html tbody tr:hover {
 <p>This is the subpart of the Clebsch-Gordan iteration for fixed l1, l2, and l. The first two dimensions are the “dense” ones, so the same operation is performed for all the indices in the first two dimensions.</p>
 <p>Since Clebsch-Gordan coefficients are very sparse, it is worthwhile to align them into a 1-dimensional tensor containing only non-zero values, but in this case, we need to supply this tensor with supplementary indices tensors telling us what are the corresponding m1, m2, and <span class="math notranslate nohighlight">\(\mu\)</span> indices.</p>
 </section>
-</section>
 <section id="Reference-slow-implementation">
-<h1>Reference slow implementation<a class="headerlink" href="#Reference-slow-implementation" title="Permalink to this headline"></a></h1>
+<h2>Reference slow implementation<a class="headerlink" href="#Reference-slow-implementation" title="Permalink to this headline"></a></h2>
 <p>Reference slow python implementation is as simple as this:</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
@@ -472,7 +471,7 @@ torch.Size([100, 17, 11])
 </div>
 </section>
 <section id="Fast-implementation">
-<h1>Fast implementation<a class="headerlink" href="#Fast-implementation" title="Permalink to this headline"></a></h1>
+<h2>Fast implementation<a class="headerlink" href="#Fast-implementation" title="Permalink to this headline"></a></h2>
 <p>The main contribution of this package is the very optimized cuda (and cpu) implementation of this operation.</p>
 <p>First of all we need to create cuda extension:</p>
 <div class="nbinput docutils container">
@@ -552,6 +551,7 @@ tensor(7.1526e-07, device=&#39;cuda:0&#39;)
 </pre></div>
 </div>
 </div>
+</section>
 </section>
 
 
