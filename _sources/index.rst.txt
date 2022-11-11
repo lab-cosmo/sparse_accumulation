@@ -8,4 +8,4 @@
    :maxdepth: 1
    :caption: Tutorial
 
-   tutorial  
+   usage_in_python  
