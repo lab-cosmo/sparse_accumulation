@@ -1,0 +1,5 @@
+FROM nvcr.io/nvidia/pytorch:22.03-py3
+
+COPY . /sparse_accumulation
+
+RUN python3 -m pip install . --user
