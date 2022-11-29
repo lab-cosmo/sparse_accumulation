@@ -4,7 +4,7 @@
 Sparse accumulation
 ===================
 
-Optimized pytorch CUDA and cpu kernels for the sparse accumulation operation which is usefull for SO(3) equivariant computations
+.. include:: docs/abstract.rst
 
 ++++++++++++
 Installation
@@ -16,7 +16,11 @@ Installation
 Tests
 ++++++++++++
 
+gpu tests:
 :bash:`python3 -m pytest test_cpp_jit_cuda.py -vrA`
+
+cpu tests:
+:bash:`python3 -m pytest test_cpp_contiguous.py`
     
 +++++++++++++
 Documentation
