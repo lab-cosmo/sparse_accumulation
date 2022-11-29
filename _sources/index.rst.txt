@@ -1,5 +1,10 @@
 .. q
 
+Sparse Accumulation
+-------------------
+
+.. include:: abstract.rst
+
 
 Installation
 ------------
