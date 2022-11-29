@@ -3,7 +3,9 @@
 Sparse Accumulation
 -------------------
 
-.. include:: abstract.rst
+.. include:: ../README.rst
+   :start-after: inclusion-marker-representations-start
+   :end-before: inclusion-marker-representations-end
 
 
 Installation
