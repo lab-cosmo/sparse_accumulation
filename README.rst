@@ -17,9 +17,7 @@ The sparse accumulation package contains significantly optimized CPU and GPU PyT
 
 This operation is required for SO(3) equivariant neural networks and other machine learning models. The fundamental building block of such methods is the so-called Clebsch-Gordan iteration given by:
 
-.. math::
-
-    \text{Output}[..., \mu] = \sum_{m_1, m_2} \text{X_1}[..., m_1] * \text{X_2}[..., m_2] * C_{m_1, m_2, \mu}^{l_1, l_2, l_{output}},
+![Alt text](docs/CG.png?raw=true "CG iteration")
 
 where :math:`C_{m_1, m_2, \mu}^{l_1, l_2, l_{output}}` are the Clebsch-Gordan coefficients. These coefficients are sparse, particularly for the complex-valued version the sparsity pattern is that the only non-zero values are for :math:`m_1 + m_2 = \mu`. For the real-valued version, the sparsity pattern is more complicated, but still, only a small ratio of the entries are non-zeros. Thus, it makes sense to store only non-zero values in a one-dimensional array. In this case, one needs to provide additional arrays with indices providing the information about the corresponding :math:`m_1`, :math:`m_2` and :math:`\mu`. With such data organization, the CG iteration falls to the defined above sparse accumulation operation. 
 
