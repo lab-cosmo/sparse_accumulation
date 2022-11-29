@@ -48,6 +48,10 @@
               <p class="caption"><span class="caption-text">Usage</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#preparing-the-dummy-data">preparing the dummy data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#sparse-accumulation-cpu">sparse accumulation cpu</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#sparse-accumulation-gpu">sparse accumulation gpu</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Precomputing-transformation-rule">Precomputing transformation rule</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#Goal">Goal</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#Reference-slow-implementation">Reference slow implementation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#Fast-implementation">Fast implementation</a></li>
@@ -359,6 +363,7 @@ div.rendered_html tbody tr:hover {
 </style>
 <section id="Tutorial">
 <h1>Tutorial<a class="headerlink" href="#Tutorial" title="Permalink to this headline"></a></h1>
+<p>[Understood that there is no sense to update tutorial further until certain code development]</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
@@ -368,6 +373,105 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
+<section id="preparing-the-dummy-data">
+<h2>preparing the dummy data<a class="headerlink" href="#preparing-the-dummy-data" title="Permalink to this headline"></a></h2>
+<p>Let’s prepare some dummy data to play with:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">X1</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">17</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="n">X2</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">17</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+
+<span class="n">m1</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">LongTensor</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+<span class="n">m2</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">LongTensor</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+<span class="n">mu</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">LongTensor</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+
+<span class="n">C</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">FloatTensor</span><span class="p">([</span><span class="mf">0.17</span><span class="p">,</span> <span class="mf">0.23</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.9</span><span class="p">])</span>
+<br/></pre></div>
+</div>
+</div>
+</section>
+<section id="sparse-accumulation-cpu">
+<h2>sparse accumulation cpu<a class="headerlink" href="#sparse-accumulation-cpu" title="Permalink to this headline"></a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="sparse-accumulation-gpu">
+<h2>sparse accumulation gpu<a class="headerlink" href="#sparse-accumulation-gpu" title="Permalink to this headline"></a></h2>
+<p>First of all we need to compile the extension:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">torch.utils</span> <span class="kn">import</span> <span class="n">cpp_extension</span>
+
+<span class="n">cpp_extension</span><span class="o">.</span><span class="n">load</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;sparse_accumulation_cuda&quot;</span><span class="p">,</span>
+    <span class="n">sources</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;cuda_optimized/sparse_accumulation_cuda_kernel2D.cu&quot;</span><span class="p">],</span>
+    <span class="n">is_python_module</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">extra_cuda_cflags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Using /home/pozdn/.cache/torch_extensions/py39_cu113 as PyTorch extensions root...
+Detected CUDA files, patching ldflags
+Emitting ninja build file /home/pozdn/.cache/torch_extensions/py39_cu113/sparse_accumulation_cuda/build.ninja...
+Building extension module sparse_accumulation_cuda...
+Allowing ninja to set a default number of workers... (overridable by setting the environment variable MAX_JOBS=N)
+ninja: no work to do.
+Loading extension module sparse_accumulation_cuda...
+</pre></div></div>
+</div>
+<p>Let’s move our dummy data to the gpu:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">X1_cuda</span> <span class="o">=</span> <span class="n">X1</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>
+<span class="n">X2_cuda</span> <span class="o">=</span> <span class="n">X2</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>
+<span class="n">m1_cuda</span> <span class="o">=</span> <span class="n">m1</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>
+<span class="n">m2_cuda</span> <span class="o">=</span> <span class="n">m2</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>
+<span class="n">mu_cuda</span> <span class="o">=</span> <span class="n">mu</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>
+<span class="n">C_cuda</span> <span class="o">=</span> <span class="n">C</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">output</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">sparse_accumulation_cuda</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="n">X1_cuda</span><span class="p">,</span> <span class="n">X2_cuda</span><span class="p">,</span> <span class="n">mu_cuda</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">m1_cuda</span><span class="p">,</span> <span class="n">m2_cuda</span><span class="p">,</span> <span class="n">C_cuda</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+torch.Size([10, 17, 5])
+</pre></div></div>
+</div>
+</section>
+<section id="Precomputing-transformation-rule">
+<h2>Precomputing transformation rule<a class="headerlink" href="#Precomputing-transformation-rule" title="Permalink to this headline"></a></h2>
+<p>If we want the sparse accumulation operation to do the actual Clebsch-Gordan iteration we need to precompute the corresponding transformation rule and populate the arrays <code class="docutils literal notranslate"><span class="pre">m1</span></code>, <code class="docutils literal notranslate"><span class="pre">m2</span></code>, <code class="docutils literal notranslate"><span class="pre">mu</span></code> and <code class="docutils literal notranslate"><span class="pre">multipliers</span></code> with the actual Clebsch-Gordan coefficients.</p>
+</section>
 <section id="Goal">
 <h2>Goal<a class="headerlink" href="#Goal" title="Permalink to this headline"></a></h2>
 <p>The goal is to compute this for all <span class="math notranslate nohighlight">\(\mu\)</span>:</p>
@@ -379,7 +483,7 @@ div.rendered_html tbody tr:hover {
 <h2>Reference slow implementation<a class="headerlink" href="#Reference-slow-implementation" title="Permalink to this headline"></a></h2>
 <p>Reference slow python implementation is as simple as this:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">sparse_accumulation_loops</span><span class="p">(</span><span class="n">X1</span><span class="p">,</span> <span class="n">X2</span><span class="p">,</span> <span class="n">idx_output</span><span class="p">,</span> <span class="n">output_size</span><span class="p">,</span> <span class="n">idx_1</span><span class="p">,</span> <span class="n">idx_2</span><span class="p">,</span> <span class="n">multipliers</span><span class="p">):</span>
@@ -398,7 +502,7 @@ div.rendered_html tbody tr:hover {
 <p>The first two dense dimensions are introduced, keeping in mind batch and feature dimensions. If you need just 1, it is possible to introduce a dummy dimension of size 1 ^^.</p>
 <p>The transformation itself, i.e., Clebsch-Gordan coefficients, can be precomputed once at the very beginning. This repo among the other things contains the code for this:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">clebsch_gordan</span> <span class="kn">import</span> <span class="n">ClebschGordan</span><span class="p">,</span> <span class="n">get_real_clebsch_gordan</span>
@@ -450,7 +554,7 @@ multipliers shape:  torch.Size([126])
 <p>This is a simple wrapper on sympy package, and the definition of the real clebsch-gordan coefficients is consistent with librascal real spherical harmonics, nice, wigner iterations, and rascaline</p>
 <p>Now we can do the Clebsch-Gordan iteration:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">X1</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">17</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">L_MAX</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>
@@ -474,60 +578,26 @@ torch.Size([100, 17, 11])
 <h2>Fast implementation<a class="headerlink" href="#Fast-implementation" title="Permalink to this headline"></a></h2>
 <p>The main contribution of this package is the very optimized cuda (and cpu) implementation of this operation.</p>
 <p>First of all we need to create cuda extension:</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">torch.utils</span> <span class="kn">import</span> <span class="n">cpp_extension</span>
-
-<span class="n">cpp_extension</span><span class="o">.</span><span class="n">load</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;sparse_accumulation_cuda&quot;</span><span class="p">,</span>
-    <span class="n">sources</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;cuda_optimized/sparse_accumulation_cuda_kernel2D.cu&quot;</span><span class="p">],</span>
-    <span class="n">is_python_module</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-    <span class="n">extra_cuda_cflags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
 </pre></div>
 </div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-Using /home/pozdn/.cache/torch_extensions/py38_cu111 as PyTorch extensions root...
-Detected CUDA files, patching ldflags
-Emitting ninja build file /home/pozdn/.cache/torch_extensions/py38_cu111/sparse_accumulation_cuda/build.ninja...
-Building extension module sparse_accumulation_cuda...
-Allowing ninja to set a default number of workers... (overridable by setting the environment variable MAX_JOBS=N)
-[1/2] /usr/local/cuda/bin/nvcc  -DTORCH_EXTENSION_NAME=sparse_accumulation_cuda -DTORCH_API_INCLUDE_EXTENSION_H -DPYBIND11_COMPILER_TYPE=\&#34;_gcc\&#34; -DPYBIND11_STDLIB=\&#34;_libstdcpp\&#34; -DPYBIND11_BUILD_ABI=\&#34;_cxxabi1011\&#34; -isystem /home/pozdn/.local/lib/python3.8/site-packages/torch/include -isystem /home/pozdn/.local/lib/python3.8/site-packages/torch/include/torch/csrc/api/include -isystem /home/pozdn/.local/lib/python3.8/site-packages/torch/include/TH -isystem /home/pozdn/.local/lib/python3.8/site-packages/torch/include/THC -isystem /usr/local/cuda/include -isystem /home/pozdn/anaconda3/include/python3.8 -D_GLIBCXX_USE_CXX11_ABI=0 -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__ -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__ --expt-relaxed-constexpr -gencode=arch=compute_75,code=compute_75 -gencode=arch=compute_75,code=sm_75 --compiler-options &#39;-fPIC&#39; -std=c++14 -c /home/pozdn/sparse_accumulation/cuda_optimized/sparse_accumulation_cuda_kernel2D.cu -o sparse_accumulation_cuda_kernel2D.cuda.o
-/home/pozdn/sparse_accumulation/cuda_optimized/sparse_accumulation_cuda_kernel2D.cu(222): warning: variable &#34;z_old&#34; was declared but never referenced
-
-[2/2] c++ sparse_accumulation_cuda_kernel2D.cuda.o -shared -L/home/pozdn/.local/lib/python3.8/site-packages/torch/lib -lc10 -lc10_cuda -ltorch_cpu -ltorch_cuda_cu -ltorch_cuda_cpp -ltorch -ltorch_python -L/usr/local/cuda/lib64 -lcudart -o sparse_accumulation_cuda.so
-Loading extension module sparse_accumulation_cuda...
-</pre></div></div>
 </div>
 <p>Next the fast implementation can be invoked like this:</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">output_fast</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">sparse_accumulation_cuda</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="n">X1</span><span class="p">,</span> <span class="n">X2</span><span class="p">,</span> <span class="n">mu_aligned</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">L_MAX</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">m1_aligned</span><span class="p">,</span> <span class="n">m2_aligned</span><span class="p">,</span> <span class="n">multipliers</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">output_fast</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
 </pre></div>
 </div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-torch.Size([100, 17, 11])
-</pre></div></div>
 </div>
 <p>outputs are the same:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">output_loops</span> <span class="o">-</span> <span class="n">output_fast</span><span class="p">)))</span>
@@ -539,7 +609,12 @@ torch.Size([100, 17, 11])
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-tensor(7.1526e-07, device=&#39;cuda:0&#39;)
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+Input <span class="ansi-green-fg">In [9]</span>, in <span class="ansi-cyan-fg">&lt;cell line: 1&gt;</span><span class="ansi-blue-fg">()</span>
+<span class="ansi-green-fg">----&gt; 1</span> <span style="color: rgb(0,135,0)">print</span>(torch<span style="color: rgb(98,98,98)">.</span>max(torch<span style="color: rgb(98,98,98)">.</span>abs(output_loops <span style="color: rgb(98,98,98)">-</span> <span class="ansi-yellow-bg">output_fast</span>)))
+
+<span class="ansi-red-fg">NameError</span>: name &#39;output_fast&#39; is not defined
 </pre></div></div>
 </div>
 <p>You can take a look at the benchmarks files .py along with their output .out to get an idea 1) how to benchmark this properly with gpu synchronization and 2) the speed of this operation compared to a naive implementation</p>
