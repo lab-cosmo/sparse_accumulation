@@ -1,21 +1,8 @@
 .. q
 
-Sparse Accumulation
--------------------
-
 .. include:: ../README.rst
-   :start-after: inclusion-marker-representations-start
-   :end-before: inclusion-marker-representations-end
-
-
-Installation
-------------
-
-.. include:: installation.rst
-
-Tests
------
-.. include:: tests.rst
+   :start-after: inclusion-marker-preambule-start
+   :end-before: inclusion-marker-preambule-end
 
 .. toctree::
    :glob:

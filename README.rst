@@ -1,10 +1,11 @@
+.. inclusion-marker-preambule-start
+
 .. role:: bash(code)
    :language: bash
 
 Sparse accumulation
 ===================
 
-.. inclusion-marker-representations-start
  
 This package contains significantly optimized CPU and GPU PyTorch extensions for the operation we call sparse accumulation. This operation takes two input arrays - X_1 and X_2, and produces an output one, given the transformation rule defined by one-dimensional arrays m_1, m_2, mu, and C. The functional form can be best explained by the following pseudocode:
 
@@ -27,8 +28,6 @@ Our benchmarks show that our custom PyTorch extension while being memory efficie
 
 All the benchmarks measurements and reference implementations details can be found in the [todo] benchmarks section. 
 
-.. inclusion-marker-representations-end
-
 ++++++++++++
 Installation
 ++++++++++++
@@ -45,6 +44,8 @@ gpu tests:
 cpu tests:
 :bash:`python3 -m pytest test_cpp_contiguous.py`
     
+.. inclusion-marker-preambule-end
+
 +++++++++++++
 Documentation
 +++++++++++++
