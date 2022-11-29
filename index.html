@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sparse Accumulation &mdash; sparse accumulation  documentation</title>
+  <title>Sparse accumulation &mdash; sparse accumulation  documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/togglebutton.css" type="text/css" />
@@ -64,7 +64,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="#" class="icon icon-home"></a> &raquo;</li>
-      <li>Sparse Accumulation</li>
+      <li>Sparse accumulation</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -99,7 +99,7 @@
 }
 </style>
 <section id="sparse-accumulation">
-<h1>Sparse Accumulation<a class="headerlink" href="#sparse-accumulation" title="Permalink to this headline"></a></h1>
+<h1>Sparse accumulation<a class="headerlink" href="#sparse-accumulation" title="Permalink to this headline"></a></h1>
 <p>This package contains significantly optimized CPU and GPU PyTorch extensions for the operation we call sparse accumulation. This operation takes two input arrays - X_1 and X_2, and produces an output one, given the transformation rule defined by one-dimensional arrays m_1, m_2, mu, and C. The functional form can be best explained by the following pseudocode:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">m_1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
     <span class="n">output</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">mu</span><span class="p">[</span><span class="n">index</span><span class="p">]]</span> <span class="o">+=</span> <span class="n">X_1</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">m_1</span><span class="p">[</span><span class="n">index</span><span class="p">]]</span> <span class="o">*</span> <span class="n">X_2</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">m_2</span><span class="p">[</span><span class="n">index</span><span class="p">]]</span> <span class="o">*</span> <span class="n">C</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
@@ -111,18 +111,16 @@
 <p>Our benchmarks show that our custom PyTorch extension while being memory efficient, is significantly faster compared to all alternative implementations we were able to come up with, including dense matrix multiplication (with a lot of zeros inside due to sparsity of CG coefficients), sparse matrix multiplication using PyTorch <a class="reference external" href="https://pytorch.org/docs/stable/sparse.html">sparse engine</a>  and the one relying on PyTorch  <a class="reference external" href="https://pytorch.org/docs/stable/generated/torch.Tensor.index_add_.html">index_add</a>.</p>
 <p>[todo] benchmark against e3nn</p>
 <p>All the benchmarks measurements and reference implementations details can be found in the [todo] benchmarks section.</p>
-</section>
 <section id="installation">
-<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline"></a></h1>
-<p>run the following command:</p>
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline"></a></h2>
 <p><code class="code bash docutils literal notranslate"><span class="pre">python3</span> <span class="pre">-m</span> <span class="pre">pip</span> <span class="pre">install</span> <span class="pre">.</span></code></p>
-<p>for the user installation run:</p>
-<p><code class="code bash docutils literal notranslate"><span class="pre">python3</span> <span class="pre">-m</span> <span class="pre">pip</span> <span class="pre">install</span> <span class="pre">.</span> <span class="pre">--user</span></code></p>
 </section>
 <section id="tests">
-<h1>Tests<a class="headerlink" href="#tests" title="Permalink to this headline"></a></h1>
-<p>The command for tests is:</p>
-<p><code class="code bash docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">test_cpp_jit_cuda.py</span> <span class="pre">-vrA</span></code></p>
+<h2>Tests<a class="headerlink" href="#tests" title="Permalink to this headline"></a></h2>
+<p>gpu tests:
+<code class="code bash docutils literal notranslate"><span class="pre">python3</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">test_cpp_jit_cuda.py</span> <span class="pre">-vrA</span></code></p>
+<p>cpu tests:
+<code class="code bash docutils literal notranslate"><span class="pre">python3</span> <span class="pre">-m</span> <span class="pre">pytest</span> <span class="pre">test_cpp_contiguous.py</span></code></p>
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">Usage</span></p>
 <ul>
@@ -132,6 +130,7 @@
 <div class="toctree-wrapper compound">
 </div>
 <p>[todo] benchmarks here</p>
+</section>
 </section>
 
 
