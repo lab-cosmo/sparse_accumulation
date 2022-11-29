@@ -18,6 +18,14 @@ Tests
 .. toctree::
    :glob:
    :maxdepth: 1
-   :caption: Tutorial
+   :caption: Usage
 
    usage_in_python  
+   
+   
+.. toctree::
+   :glob:
+   :maxdepth: 1
+   :caption: Benchmarks
+
+.. include:: benchmarks.rst
