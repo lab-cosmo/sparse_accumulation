@@ -4,4 +4,3 @@ COPY . /sparse_accumulation
 
 WORKDIR /sparse_accumulation
 RUN pip install sympy
-RUN python3 -m pip install . --user
