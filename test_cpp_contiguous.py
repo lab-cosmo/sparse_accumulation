@@ -1,7 +1,9 @@
 import torch
-from clebsch_gordan import get_real_clebsch_gordan, ClebschGordan
+from sparse_accumulation.clebsch_gordan import get_real_clebsch_gordan, ClebschGordan
 from sparse_accumulation_plain_torch import sparse_accumulation_loops
-from cpu_kernel import sparse_accumulation_active_dim_last, sparse_accumulation_active_dim_first, sparse_accumulation_active_dim_middle
+from cpu_kernel import sparse_accumulation_active_dim_first, sparse_accumulation_active_dim_middle
+from sparse_accumulation import accumulate
+
 import numpy as np
 
 def get_rule(L_MAX):
@@ -45,8 +47,7 @@ def test_forward(epsilon = 1e-7):
     
     python_loops_output = sparse_accumulation_loops(X1, X2, mu_aligned, 2 * L_MAX + 1, m1_aligned, m2_aligned, multipliers,
                                                     active_dim = 2)
-    cpp_output = sparse_accumulation_active_dim_last.SparseAccumulationActiveDimLast.apply(X1, X2, mu_aligned,
-                                                          2 * L_MAX + 1, m1_aligned, m2_aligned, multipliers)
+    cpp_output = accumulate(X1, X2, mu_aligned, 2 * L_MAX + 1, m1_aligned, m2_aligned, multipliers)
     delta = python_loops_output - cpp_output
     
     relative_error = torch.mean(torch.abs(delta)) / torch.mean(torch.abs(python_loops_output))
@@ -125,8 +126,7 @@ def test_backward(epsilon = 1e-7):
     X1.grad.zero_()
     X2.grad.zero_()
 
-    cpp_output = sparse_accumulation_active_dim_last.SparseAccumulationActiveDimLast.apply(X1, X2, mu_aligned,
-                                                          2 * L_MAX + 1, m1_aligned, m2_aligned, multipliers)
+    cpp_output = accumulate(X1, X2, mu_aligned, 2 * L_MAX + 1, m1_aligned, m2_aligned, multipliers)
     cpp_output.backward(gradient = output_grad)
 
     X1_grad_cpp = torch.detach(torch.clone(X1.grad))
