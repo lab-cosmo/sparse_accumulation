@@ -418,7 +418,7 @@ std::vector<torch::Tensor> sparse_accumulation_gpu_backward(
     return sparse_accumulation_cuda_backward(d_output,X1,X2,idx_output,idx_1,idx_2,multipliers);
 }
 
-TORCH_LIBRARY(sparse_accumulation_cuda, m) {
-    m.def("forward", sparse_accumulation_gpu_forward);
-    m.def("backward", sparse_accumulation_gpu_backward);
+PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
+  m.def("forward", &sparse_accumulation_gpu_forward,  "Sparse Accumulation forward (CUDA)");
+  m.def("backward", &sparse_accumulation_gpu_backward, "Sparse Accumulation backward (CUDA)");
 }
