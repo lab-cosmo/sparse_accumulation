@@ -1,5 +1,6 @@
 import torch
 import sparse_accumulation_active_dim_last_cpp
+import sparse_accumulation_cuda
 
 def check_all_contiguous(tensors):   
     for tensor in tensors:
@@ -27,7 +28,7 @@ def check_all_on_same_device(tensors):
         if tensor.get_device() != device:
             raise ValueError("all the tensors must be on the same device")
 
-def sparse_accumulation(X1, X2, idx_output, output_size, idx_1, idx_2, multipliers):
+def accumulate(X1, X2, idx_output, output_size, idx_1, idx_2, multipliers):
     tensors = [X1, X2, idx_output, idx_1, idx_2, multipliers]
     check_all_on_same_device(tensors)
     
@@ -45,7 +46,7 @@ class SparseAccumulationCUDA(torch.autograd.Function):
         check_all_on_same_device(tensors)
         check_all_contiguous(tensors)  
         
-        output = torch.ops.sparse_accumulation_cuda.forward(X1, X2, idx_output, output_size, idx_1, idx_2, multipliers)
+        output = sparse_accumulation_cuda.forward(X1, X2, idx_output, output_size, idx_1, idx_2, multipliers)[0]
         ctx.save_for_backward(*[X1, X2, idx_output, idx_1, idx_2, multipliers])
         return output
         
@@ -64,7 +65,7 @@ class SparseAccumulationCUDA(torch.autograd.Function):
         check_all_on_same_device(ctx.saved_tensors)
         
         
-        d_X1, d_X2 = torch.ops.sparse_accumulation_cuda.backward(grad_output, X1, X2, idx_output, idx_1, idx_2, multipliers)
+        d_X1, d_X2 = sparse_accumulation_cuda.backward(grad_output, X1, X2, idx_output, idx_1, idx_2, multipliers)
         
         if not X1.requires_grad:
             d_X1 = None

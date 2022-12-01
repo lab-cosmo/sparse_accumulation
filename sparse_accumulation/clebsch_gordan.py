@@ -7,7 +7,7 @@ except ImportError:
     wigners = None
 
 import numpy as np
-
+import torch
 
 def _compute_cg(l1, l2, l, m1, m2):
     if wigners is None:
@@ -34,7 +34,17 @@ class ClebschGordan:
                             now = _compute_cg(l1, l2, l, m1, m2)
                             self.precomputed_[l1, l2, l, m1 + l1, m2 + l2] = now
 
-
+class PartialClebschGordan:
+    def __init__(self, l1, l2, l_output):
+        self.l1 = l1
+        self.l2 = l2
+        self.l_output = l_output
+        
+        self.values = np.zeros([2 * l1 + 1, 2 * l2 + 1])
+        for m1 in range(-l1, l1 + 1):
+            for m2 in range(-l2, l2 + 1):
+                self.values[m1 + l1, m2 + l2] = _compute_cg(l1, l2, l_output, m1, m2)
+        
 def _multiply(first, second, multiplier):
     return [first[0], second[0], first[1] * second[1] * multiplier]
 
@@ -118,3 +128,32 @@ def get_real_clebsch_gordan(clebsch, l1, l2, lambd):
     for i in range(len(result)):
         result[i] = _compress(result[i])
     return result
+
+def get_cg_transformation_rule(l1, l2, l_output, dtype = torch.float32, device = "cpu", clebsch = None):
+    
+    clebsch = PartialClebschGordan(l1, l2, l_output).values
+    indices = get_real_clebsch_gordan(clebsch, l1, l2, l_output)
+    
+    m1_aligned, m2_aligned = [], []
+    multipliers, mu_aligned = [], []
+    for mu in range(2 * l_output + 1):
+        for el in indices[mu]:
+            m1, m2, multiplier = el
+            m1_aligned.append(m1)
+            m2_aligned.append(m2)
+            multipliers.append(multiplier * 1.0)
+            mu_aligned.append(mu)
+    m1_aligned = torch.tensor(m1_aligned, dtype=torch.int64, device=device)
+    m2_aligned = torch.tensor(m2_aligned, dtype=torch.int64, device=device)
+    mu_aligned = torch.tensor(mu_aligned, dtype=torch.int64, device=device)
+    multipliers = torch.tensor(multipliers, dtype=dtype, device=device)
+
+    indices = np.argsort(mu_aligned)
+
+    m1_aligned = m1_aligned[indices]
+    m2_aligned = m2_aligned[indices]
+    mu_aligned = mu_aligned[indices]
+    multipliers = multipliers[indices]
+  
+    return m1_aligned, m2_aligned, mu_aligned, multipliers
+
