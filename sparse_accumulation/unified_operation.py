@@ -9,7 +9,7 @@ def check_all_contiguous(tensors):
 
 def check_all_on_cpu(tensors):
     for tensor in tensors:
-        if tensor.device != 'cpu':
+        if str(tensor.device) != 'cpu':
             raise ValueError("all the tensors must be on cpu")
           
 
@@ -31,7 +31,7 @@ def sparse_accumulation(X1, X2, idx_output, output_size, idx_1, idx_2, multiplie
     tensors = [X1, X2, idx_output, idx_1, idx_2, multipliers]
     check_all_on_same_device(tensors)
     
-    if X1.is_cuda():
+    if X1.is_cuda:
         return SparseAccumulationCUDA.apply(X1, X2, idx_output, output_size, idx_1, idx_2, multipliers)
     else:
         return SparseAccumulationCPU.apply(X1, X2, idx_output, output_size, idx_1, idx_2, multipliers) 
