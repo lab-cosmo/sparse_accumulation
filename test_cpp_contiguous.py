@@ -32,6 +32,7 @@ def get_rule(L_MAX):
     return m1_aligned, m2_aligned, mu_aligned, multipliers
 
 def test_forward(epsilon = 1e-7):
+    print("Testing forward pass with the active dimension being the last one")
     L_MAX = 5
     BATCH_SIZE = 1000
     N_FEATURES = 100
@@ -53,6 +54,7 @@ def test_forward(epsilon = 1e-7):
     
     
 def test_forward_active_dim_first(epsilon = 1e-7):
+    print("Testing forward pass with the active dimension being the first one")
     L_MAX = 5
     BATCH_SIZE = 1000
     N_FEATURES = 100
@@ -73,6 +75,7 @@ def test_forward_active_dim_first(epsilon = 1e-7):
     assert  relative_error < epsilon
     
 def test_forward_active_dim_middle(epsilon = 1e-7):
+    print("Testing forward pass with the active dimension being the middle one")
     L_MAX = 5
     BATCH_SIZE = 1000
     N_FEATURES = 100
@@ -100,6 +103,7 @@ def get_relative_error(first, second):
 
 
 def test_backward(epsilon = 1e-7):
+    print("Testing backward pass with the active dimension being the last one")
     L_MAX = 5
     BATCH_SIZE = 1000
     N_FEATURES = 100
@@ -133,6 +137,7 @@ def test_backward(epsilon = 1e-7):
     
 
 def test_backward_active_dim_middle(epsilon = 1e-7):
+    print("Testing backward pass with the active dimension being the middle one")
     L_MAX = 5
     BATCH_SIZE = 1000
     N_FEATURES = 100
@@ -168,6 +173,7 @@ def test_backward_active_dim_middle(epsilon = 1e-7):
     
     
 def test_backward_active_dim_first(epsilon = 1e-7):
+    print("Testing backward pass with the active dimension being the first one")
     L_MAX = 5
     BATCH_SIZE = 1000
     N_FEATURES = 100

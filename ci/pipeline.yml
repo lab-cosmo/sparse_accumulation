@@ -16,9 +16,11 @@ build_job:
 
 test_job:
   stage: test
-  extends: .container-runner-daint
+  extends: .container-runner-daint-gpu
   image: $PERSIST_IMAGE_NAME
   script:
+    - cd /sparse_accumulation
+    - python3 -m pip install . --user
     - python3 -m pytest test_cpp_contiguous.py
   variables:
     SLURM_JOB_NUM_NODES: 1
