@@ -8,6 +8,7 @@ except ImportError:
 
 import numpy as np
 import torch
+from .unified_operation import accumulate
 
 def _compute_cg(l1, l2, l, m1, m2):
     if wigners is None:
@@ -129,8 +130,13 @@ def get_real_clebsch_gordan(clebsch, l1, l2, lambd):
         result[i] = _compress(result[i])
     return result
 
-def get_cg_transformation_rule(l1, l2, l_output, dtype = torch.float32, device = "cpu", clebsch = None):
-    
+def check_l_consistency(l1, l2, l_output):
+    if (l_output < abs(l1 - l2)) or (l_output > (l1 + l2)):
+        raise ValueError("l_output must be in between |l1 - l2| and (l1 + l2)")
+        
+def get_cg_transformation_rule(l1, l2, l_output, dtype = torch.float32, device = "cpu"):
+    check_l_consistency(l1, l2, l_output)
+            
     clebsch = PartialClebschGordan(l1, l2, l_output).values
     indices = get_real_clebsch_gordan(clebsch, l1, l2, l_output)
     
@@ -157,3 +163,18 @@ def get_cg_transformation_rule(l1, l2, l_output, dtype = torch.float32, device =
   
     return m1_aligned, m2_aligned, mu_aligned, multipliers
 
+class CGCalculatorSingle(torch.nn.Module):
+    def __init__(self, l1, l2, l_output, dtype = torch.float32):
+        super(CGCalculatorSingle, self).__init__()
+        check_l_consistency(l1, l2, l_output)
+        self.l1 = l1
+        self.l2 = l2
+        self.l_output = l_output
+        m1, m2, mu, C = get_cg_transformation_rule(l1, l2, l_output, dtype = dtype)
+        self.register_buffer('m1', m1)
+        self.register_buffer('m2', m2)
+        self.register_buffer('mu', mu)
+        self.register_buffer('C', C)
+        
+    def forward(self, X1, X2):
+        return accumulate(X1, X2, self.mu, 2 * self.l_output + 1, self.m1, self.m2, self.C)
