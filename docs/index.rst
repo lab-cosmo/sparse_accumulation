@@ -9,7 +9,7 @@
    :maxdepth: 1
    :caption: Usage
 
-   usage_in_python  
+   tutorial  
    
    
 .. toctree::

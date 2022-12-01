@@ -1,7 +1,6 @@
 import os
 
 os.system("rm -r ../build/*")
-os.system('cp usage_in_python.ipynb docs/')
 os.chdir("./docs")
 os.system("make html")
 os.chdir("../")
