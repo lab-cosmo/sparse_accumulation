@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tutorial &mdash; sparse accumulation  documentation</title>
+  <title>Sparse accumulation &mdash; sparse accumulation  documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/togglebutton.css" type="text/css" />
@@ -47,10 +47,14 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption"><span class="caption-text">Usage</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorial</a><ul>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Sparse accumulation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#Preparing-a-dummy-data">Preparing a dummy data</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#Sparse-accumulation">Sparse accumulation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#[optional]-Clebsch-Gordan-iteration">[optional] Clebsch-Gordan iteration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#accumulate-function"><code class="docutils literal notranslate"><span class="pre">accumulate</span></code> function</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#[optional]-Clebsch-Gordan-iteration">[optional] Clebsch-Gordan iteration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#precomputing-Clebsch-Gordan-transformation-rule">precomputing Clebsch-Gordan transformation rule</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Clebsch-Gordan-Calculator">Clebsch-Gordan Calculator</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#Outdated">Outdated</a></li>
 </ul>
 </li>
@@ -70,7 +74,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Tutorial</li>
+      <li>Sparse accumulation</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/tutorial.ipynb.txt" rel="nofollow"> View page source</a>
       </li>
@@ -358,8 +362,8 @@ div.rendered_html tbody tr:hover {
     text-align: unset;
 }
 </style>
-<section id="Tutorial">
-<h1>Tutorial<a class="headerlink" href="#Tutorial" title="Permalink to this headline"></a></h1>
+<section id="Sparse-accumulation">
+<h1>Sparse accumulation<a class="headerlink" href="#Sparse-accumulation" title="Permalink to this headline"></a></h1>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
@@ -367,7 +371,6 @@ div.rendered_html tbody tr:hover {
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">sparse_accumulation</span> <span class="kn">import</span> <span class="n">accumulate</span>
-<span class="kn">from</span> <span class="nn">sparse_accumulation</span> <span class="kn">import</span> <span class="n">get_cg_transformation_rule</span>
 </pre></div>
 </div>
 </div>
@@ -405,15 +408,15 @@ div.rendered_html tbody tr:hover {
 </div>
 </div>
 </section>
-<section id="Sparse-accumulation">
-<h2>Sparse accumulation<a class="headerlink" href="#Sparse-accumulation" title="Permalink to this headline"></a></h2>
-<p>cpu:</p>
+<section id="accumulate-function">
+<h2><code class="docutils literal notranslate"><span class="pre">accumulate</span></code> function<a class="headerlink" href="#accumulate-function" title="Permalink to this headline"></a></h2>
+<p>The main function which does sparse accumulation operation is called <code class="docutils literal notranslate"><span class="pre">accumulate</span></code>. It can be invoked like this:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">output</span> <span class="o">=</span> <span class="n">accumulate</span><span class="p">(</span><span class="n">X1</span><span class="p">,</span> <span class="n">X2</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="mi">42</span><span class="p">,</span> <span class="n">m1</span><span class="p">,</span> <span class="n">m2</span><span class="p">,</span> <span class="n">C</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">output</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -422,10 +425,11 @@ div.rendered_html tbody tr:hover {
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-torch.Size([10, 20, 42])
+torch.Size([10, 20, 42]) cpu
 </pre></div></div>
 </div>
-<p>Let’s move our dummy data to the gpu:</p>
+<p>Since the input tensors are located on cpu, the pytorch cpu extension was invoked internally.</p>
+<p>Now let’s move our dummy data to the gpu:</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
@@ -439,14 +443,13 @@ torch.Size([10, 20, 42])
 </pre></div>
 </div>
 </div>
-<p>gpu:</p>
+<p>The call is exactly the same:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">output</span> <span class="o">=</span> <span class="n">accumulate</span><span class="p">(</span><span class="n">X1_cuda</span><span class="p">,</span> <span class="n">X2_cuda</span><span class="p">,</span> <span class="n">mu_cuda</span><span class="p">,</span> <span class="mi">42</span><span class="p">,</span> <span class="n">m1_cuda</span><span class="p">,</span> <span class="n">m2_cuda</span><span class="p">,</span> <span class="n">C_cuda</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">output</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -455,16 +458,27 @@ torch.Size([10, 20, 42])
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-torch.Size([10, 20, 42])
-cuda:0
+torch.Size([10, 20, 42]) cuda:0
 </pre></div></div>
 </div>
+<p>This time our cuda kernel was invoked interenally since the input tensors are located on gpu</p>
+</section>
 </section>
 <section id="[optional]-Clebsch-Gordan-iteration">
-<h2>[optional] Clebsch-Gordan iteration<a class="headerlink" href="#[optional]-Clebsch-Gordan-iteration" title="Permalink to this headline"></a></h2>
+<h1>[optional] Clebsch-Gordan iteration<a class="headerlink" href="#[optional]-Clebsch-Gordan-iteration" title="Permalink to this headline"></a></h1>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">sparse_accumulation</span> <span class="kn">import</span> <span class="n">get_cg_transformation_rule</span>
+</pre></div>
+</div>
+</div>
+<section id="precomputing-Clebsch-Gordan-transformation-rule">
+<h2>precomputing Clebsch-Gordan transformation rule<a class="headerlink" href="#precomputing-Clebsch-Gordan-transformation-rule" title="Permalink to this headline"></a></h2>
 <p>If we want the sparse accumulation operation to do the actual Clebsch-Gordan iteration we need to precompute the corresponding transformation rule and populate the arrays <code class="docutils literal notranslate"><span class="pre">m1</span></code>, <code class="docutils literal notranslate"><span class="pre">m2</span></code>, <code class="docutils literal notranslate"><span class="pre">mu</span></code> and <code class="docutils literal notranslate"><span class="pre">C</span></code> with the actual Clebsch-Gordan coefficients.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">l1</span> <span class="o">=</span> <span class="mi">3</span>
@@ -486,7 +500,7 @@ torch.Size([93]) torch.Size([93]) torch.Size([93]) torch.Size([93])
 <p>The mentioned above sorting operation is not required now since it has been already performed inside <code class="docutils literal notranslate"><span class="pre">get_cg_transformation_rule</span></code></p>
 <p>Now, given this transformation rule, sparse accumulation operation performs actual CG iteration, producing covariant vectors with l = l_output given covariant vectors with l = l1 and l = l2:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">X1</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">l1</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
@@ -505,6 +519,57 @@ torch.Size([10, 20, 11])
 </pre></div></div>
 </div>
 </section>
+<section id="Clebsch-Gordan-Calculator">
+<h2>Clebsch-Gordan Calculator<a class="headerlink" href="#Clebsch-Gordan-Calculator" title="Permalink to this headline"></a></h2>
+<p>It makes sense to wrap up the mentioned steps into the class, where the CG transformation rule is computed during initialization, and next is used in the forward method. We provide such a class called <code class="docutils literal notranslate"><span class="pre">CGCalculatorSingle</span></code></p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">sparse_accumulation</span> <span class="kn">import</span> <span class="n">CGCalculatorSingle</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">calc</span> <span class="o">=</span> <span class="n">CGCalculatorSingle</span><span class="p">(</span><span class="n">l1</span><span class="p">,</span> <span class="n">l2</span><span class="p">,</span> <span class="n">l_output</span><span class="p">)</span>
+<span class="n">output</span> <span class="o">=</span> <span class="n">calc</span><span class="p">(</span><span class="n">X1</span><span class="p">,</span> <span class="n">X2</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">output</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+torch.Size([10, 20, 11]) cpu
+</pre></div></div>
+</div>
+<p>This class supports convenient reallocation to gpu:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">calc</span> <span class="o">=</span> <span class="n">calc</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>
+<span class="n">output</span> <span class="o">=</span> <span class="n">calc</span><span class="p">(</span><span class="n">X1</span><span class="o">.</span><span class="n">cuda</span><span class="p">(),</span> <span class="n">X2</span><span class="o">.</span><span class="n">cuda</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">output</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+torch.Size([10, 20, 11]) cuda:0
+</pre></div></div>
+</div>
+<p>All the tensors constituting the transformation rule (m1, m2, mu, and C) are stored as buffers, not the parameters, so they will not be optimized.</p>
+<p>[todo] add raise Value error to accumulate function if the size of shared memory is insufficient; mention it here. [todo] add fallback to alternative (select which one) implementation to the CGCalculatorSingle if the size of shared memory is insufficient; mention it here.</p>
+</section>
 <section id="Outdated">
 <h2>Outdated<a class="headerlink" href="#Outdated" title="Permalink to this headline"></a></h2>
 <p>The goal is to compute this for all <span class="math notranslate nohighlight">\(\mu\)</span>:</p>
@@ -513,7 +578,7 @@ torch.Size([10, 20, 11])
 <p>Since Clebsch-Gordan coefficients are very sparse, it is worthwhile to align them into a 1-dimensional tensor containing only non-zero values, but in this case, we need to supply this tensor with supplementary indices tensors telling us what are the corresponding m1, m2, and <span class="math notranslate nohighlight">\(\mu\)</span> indices.</p>
 <p>Reference slow python implementation is as simple as this:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">sparse_accumulation_loops</span><span class="p">(</span><span class="n">X1</span><span class="p">,</span> <span class="n">X2</span><span class="p">,</span> <span class="n">idx_output</span><span class="p">,</span> <span class="n">output_size</span><span class="p">,</span> <span class="n">idx_1</span><span class="p">,</span> <span class="n">idx_2</span><span class="p">,</span> <span class="n">multipliers</span><span class="p">):</span>
@@ -532,10 +597,10 @@ torch.Size([10, 20, 11])
 <p>The first two dense dimensions are introduced, keeping in mind batch and feature dimensions. If you need just 1, it is possible to introduce a dummy dimension of size 1 ^^.</p>
 <p>The transformation itself, i.e., Clebsch-Gordan coefficients, can be precomputed once at the very beginning. This repo among the other things contains the code for this:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">clebsch_gordan</span> <span class="kn">import</span> <span class="n">ClebschGordan</span><span class="p">,</span> <span class="n">get_real_clebsch_gordan</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">sparse_accumulation.clebsch_gordan</span> <span class="kn">import</span> <span class="n">ClebschGordan</span><span class="p">,</span> <span class="n">get_real_clebsch_gordan</span>
 <span class="n">L_MAX</span> <span class="o">=</span> <span class="mi">5</span>
 <span class="n">clebsch</span> <span class="o">=</span> <span class="n">ClebschGordan</span><span class="p">(</span><span class="n">L_MAX</span><span class="p">)</span><span class="o">.</span><span class="n">precomputed_</span>
 <span class="n">indices</span> <span class="o">=</span> <span class="n">get_real_clebsch_gordan</span><span class="p">(</span><span class="n">clebsch</span><span class="p">[</span><span class="n">L_MAX</span><span class="p">,</span> <span class="n">L_MAX</span><span class="p">,</span> <span class="n">L_MAX</span><span class="p">],</span> <span class="n">L_MAX</span><span class="p">,</span> <span class="n">L_MAX</span><span class="p">,</span> <span class="n">L_MAX</span><span class="p">)</span>
@@ -574,20 +639,17 @@ torch.Size([10, 20, 11])
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
-<span class="ansi-red-fg">ModuleNotFoundError</span>                       Traceback (most recent call last)
-Input <span class="ansi-green-fg">In [10]</span>, in <span class="ansi-cyan-fg">&lt;cell line: 1&gt;</span><span class="ansi-blue-fg">()</span>
-<span class="ansi-green-fg">----&gt; 1</span> <span class="ansi-bold" style="color: rgb(0,135,0)">from</span> <span class="ansi-bold" style="color: rgb(0,0,255)">clebsch_gordan</span> <span class="ansi-bold" style="color: rgb(0,135,0)">import</span> ClebschGordan, get_real_clebsch_gordan
-<span class="ansi-green-intense-fg ansi-bold">      2</span> L_MAX <span style="color: rgb(98,98,98)">=</span> <span style="color: rgb(98,98,98)">5</span>
-<span class="ansi-green-intense-fg ansi-bold">      3</span> clebsch <span style="color: rgb(98,98,98)">=</span> ClebschGordan(L_MAX)<span style="color: rgb(98,98,98)">.</span>precomputed_
-
-<span class="ansi-red-fg">ModuleNotFoundError</span>: No module named &#39;clebsch_gordan&#39;
+L_MAX:
+multipliers shape:  torch.Size([126])
+m1_aligned shape:  torch.Size([126])
+m2_aligned shape:  torch.Size([126])
+multipliers shape:  torch.Size([126])
 </pre></div></div>
 </div>
 <p>This is a simple wrapper on sympy package, and the definition of the real clebsch-gordan coefficients is consistent with librascal real spherical harmonics, nice, wigner iterations, and rascaline</p>
 <p>Now we can do the Clebsch-Gordan iteration:</p>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">X1</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">17</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">L_MAX</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>
@@ -597,6 +659,14 @@ Input <span class="ansi-green-fg">In [10]</span>, in <span class="ansi-cyan-fg">
 <span class="nb">print</span><span class="p">(</span><span class="n">output_loops</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
 </pre></div>
 </div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+torch.Size([100, 17, 11])
+</pre></div></div>
 </div>
 <p>You can take a look at the benchmarks files .py along with their output .out to get an idea 1) how to benchmark this properly with gpu synchronization and 2) the speed of this operation compared to a naive implementation</p>
 <div class="nbinput nblast docutils container">
