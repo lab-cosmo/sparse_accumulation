@@ -1,15 +1,5 @@
 import torch
 import sparse_accumulation_active_dim_last_cpp
-from torch.utils import cpp_extension
-
-cpp_extension.load(
-    name="sparse_accumulation_cuda",
-    sources=["../cuda_optimized/sparse_accumulation_cuda_kernel2D.cu"],
-    is_python_module=False,
-    extra_cuda_cflags=None,
-    verbose=True,
-)
-
 
 def check_all_contiguous(tensors):   
     for tensor in tensors:
