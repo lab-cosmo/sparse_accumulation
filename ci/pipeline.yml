@@ -21,7 +21,7 @@ test_job:
   script:
     - cd /sparse_accumulation
     - python3 -m pip install . --user
-    - python3 -m pytest test_cpp_contiguous.py
+    - python3 -m pytest tests/test_cpp_contiguous.py
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_PARTITION: normal

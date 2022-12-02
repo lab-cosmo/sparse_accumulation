@@ -39,10 +39,10 @@ Tests
 ++++++++++++
 
 gpu tests:
-:bash:`python3 -m pytest test_cpp_jit_cuda.py -vrA`
+:bash:`python3 -m pytest tests/test_cpp_jit_cuda.py -vrA`
 
 cpu tests:
-:bash:`python3 -m pytest test_cpp_contiguous.py`
+:bash:`python3 -m pytest tests/test_cpp_contiguous.py`
     
 .. inclusion-marker-preambule-end
 
