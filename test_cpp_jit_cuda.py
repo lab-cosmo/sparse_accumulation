@@ -7,53 +7,33 @@ from torch.utils import cpp_extension
 import numpy as np
 from sparse_accumulation.clebsch_gordan import ClebschGordan, get_real_clebsch_gordan
 from sparse_accumulation_plain_torch import sparse_accumulation_loops
-from sparse_accumulation import accumulate
+from sparse_accumulation import accumulate, get_cg_transformation_rule
 
 
-def get_rule(L_MAX, dtype=torch.float64, device="cpu"):
-    cachepath = f".cache/clebsch_gordan_l{L_MAX}_{dtype}.pt"
+def get_rule(l1, l2, l_output, dtype=torch.float64, device="cpu"):
+    cachepath = f".cache/clebsch_gordan_l1_{l1}_l2_{l2}_l_output_{l_output}_dtype_{dtype}.pt"
     if os.path.isfile(cachepath):
         return torch.load(cachepath, map_location=device)
 
-    print(f"generating CG rule for L_MAX {L_MAX}")
-    clebsch = ClebschGordan(L_MAX).precomputed_
-    indices = get_real_clebsch_gordan(clebsch[L_MAX, L_MAX, L_MAX], L_MAX, L_MAX, L_MAX)
-
-    m1_aligned, m2_aligned = [], []
-    multipliers, mu_aligned = [], []
-    for mu in range(2 * L_MAX + 1):
-        for el in indices[mu]:
-            m1, m2, multiplier = el
-            m1_aligned.append(m1)
-            m2_aligned.append(m2)
-            multipliers.append(multiplier * 1.0)
-            mu_aligned.append(mu)
-    m1_aligned = torch.tensor(m1_aligned, dtype=torch.int64, device=device)
-    m2_aligned = torch.tensor(m2_aligned, dtype=torch.int64, device=device)
-    mu_aligned = torch.tensor(mu_aligned, dtype=torch.int64, device=device)
-    multipliers = torch.tensor(multipliers, dtype=dtype, device=device)
-
-    indices = np.argsort(mu_aligned)
-
-    m1_aligned = m1_aligned[indices]
-    m2_aligned = m2_aligned[indices]
-    mu_aligned = mu_aligned[indices]
-    multipliers = multipliers[indices]
-    print("done generating CG rule")
-
+    
+    m1_aligned, m2_aligned, mu_aligned, multipliers = get_cg_transformation_rule(l1, l2, l_output, dtype = dtype, device = device)
     os.makedirs(os.path.dirname(cachepath), exist_ok=True)
     torch.save([m1_aligned, m2_aligned, mu_aligned, multipliers], cachepath)
     return m1_aligned, m2_aligned, mu_aligned, multipliers
 
 
-@pytest.mark.parametrize("L_MAX", [1, 2, 5, 8, 12])
-@pytest.mark.parametrize("BATCH_SIZE", [1, 20, 2000])
+@pytest.mark.parametrize("L1", [3, 5, 8])
+@pytest.mark.parametrize("L2", [3, 5, 8])
+@pytest.mark.parametrize("L_OUTPUT", [3, 5, 8])
+@pytest.mark.parametrize("BATCH_SIZE", [1, 20, 200])
 @pytest.mark.parametrize("N_FEATURES", [1, 20, 105])
 @pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
-def test_forward(L_MAX, BATCH_SIZE, N_FEATURES, dtype):
+def test_forward(L1, L2, L_OUTPUT, BATCH_SIZE, N_FEATURES, dtype):
+    if (L_OUTPUT < abs(L1 - L2)) or (L_OUTPUT > L1 + L2):
+        pytest.skip()
+        
     atol, rtol = (1e-5, 1e-6) if dtype is torch.float32 else (1e-7, 1e-8)
-    m1_aligned, m2_aligned, mu_aligned, multipliers = get_rule(L_MAX, dtype)
-    print(f"forward {L_MAX=}, {BATCH_SIZE=}, {N_FEATURES=}, {dtype=}, {atol=}, {rtol=}")
+    m1_aligned, m2_aligned, mu_aligned, multipliers = get_rule(L1, L2, L_OUTPUT, dtype)
 
     m1_aligned_d = m1_aligned.clone().cuda()
     m2_aligned_d = m2_aligned.clone().cuda()
@@ -63,12 +43,12 @@ def test_forward(L_MAX, BATCH_SIZE, N_FEATURES, dtype):
     generator = torch.Generator()
     generator.manual_seed(30)
     X1 = torch.randn(
-        (BATCH_SIZE, N_FEATURES, 2 * L_MAX + 1),
+        (BATCH_SIZE, N_FEATURES, 2 * L1 + 1),
         generator=generator,
         dtype=dtype,
     )
     X2 = torch.randn(
-        (BATCH_SIZE, N_FEATURES, 2 * L_MAX + 1),
+        (BATCH_SIZE, N_FEATURES, 2 * L2 + 1),
         generator=generator,
         dtype=dtype,
     )
@@ -81,7 +61,7 @@ def test_forward(L_MAX, BATCH_SIZE, N_FEATURES, dtype):
         X1,
         X2,
         mu_aligned,
-        2 * L_MAX + 1,
+        2 * L_OUTPUT + 1,
         m1_aligned,
         m2_aligned,
         multipliers,
@@ -92,7 +72,7 @@ def test_forward(L_MAX, BATCH_SIZE, N_FEATURES, dtype):
         X1_d,
         X2_d,
         mu_aligned_d,
-        2 * L_MAX + 1,
+        2 * L_OUTPUT + 1,
         m1_aligned_d,
         m2_aligned_d,
         multipliers_d,
@@ -116,14 +96,17 @@ def test_forward(L_MAX, BATCH_SIZE, N_FEATURES, dtype):
 
 
 @pytest.mark.parametrize("seed", [30, 42])
-@pytest.mark.parametrize("L_MAX", [1, 2, 5, 7])
-@pytest.mark.parametrize("BATCH_SIZE", [1, 20, 2000])
+@pytest.mark.parametrize("L1", [3, 5, 8])
+@pytest.mark.parametrize("L2", [3, 5, 8])
+@pytest.mark.parametrize("L_OUTPUT", [3, 5, 8])
+@pytest.mark.parametrize("BATCH_SIZE", [1, 20, 200])
 @pytest.mark.parametrize("N_FEATURES", [1, 20, 105])
 @pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
-def test_backward(L_MAX, BATCH_SIZE, N_FEATURES, seed, dtype):
+def test_backward(L1, L2, L_OUTPUT, BATCH_SIZE, N_FEATURES, seed, dtype):
+    if (L_OUTPUT < abs(L1 - L2)) or (L_OUTPUT > L1 + L2):
+        pytest.skip()
     atol, rtol = (1e-5, 1e-6) if dtype is torch.float32 else (1e-7, 1e-8)
-    m1_aligned, m2_aligned, mu_aligned, multipliers = get_rule(L_MAX, dtype)
-    print(f"backward {L_MAX=}, {BATCH_SIZE=}, {N_FEATURES=}, {dtype=}, {atol=}, {rtol=}")
+    m1_aligned, m2_aligned, mu_aligned, multipliers = get_rule(L1, L2, L_OUTPUT, dtype)    
 
     m1_aligned_d = m1_aligned.clone().cuda()
     m2_aligned_d = m2_aligned.clone().cuda()
@@ -132,12 +115,12 @@ def test_backward(L_MAX, BATCH_SIZE, N_FEATURES, seed, dtype):
     generator = torch.Generator()
     generator.manual_seed(seed)
     X1 = torch.randn(
-        (BATCH_SIZE, N_FEATURES, 2 * L_MAX + 1),
+        (BATCH_SIZE, N_FEATURES, 2 * L1 + 1),
         generator=generator,
         dtype=dtype,
     )
     X2 = torch.randn(
-        (BATCH_SIZE, N_FEATURES, 2 * L_MAX + 1),
+        (BATCH_SIZE, N_FEATURES, 2 * L2 + 1),
         generator=generator,
         dtype=dtype,
     )
@@ -153,7 +136,7 @@ def test_backward(L_MAX, BATCH_SIZE, N_FEATURES, seed, dtype):
         X1,
         X2,
         mu_aligned,
-        2 * L_MAX + 1,
+        2 * L_OUTPUT + 1,
         m1_aligned,
         m2_aligned,
         multipliers,
@@ -175,7 +158,7 @@ def test_backward(L_MAX, BATCH_SIZE, N_FEATURES, seed, dtype):
         X1_d,
         X2_d,
         mu_aligned_d,
-        2 * L_MAX + 1,
+        2 * L_OUTPUT + 1,
         m1_aligned_d,
         m2_aligned_d,
         multipliers_d
@@ -218,29 +201,33 @@ def test_backward(L_MAX, BATCH_SIZE, N_FEATURES, seed, dtype):
     partial(sparse_accumulation_loops, active_dim=2),
     accumulate
 ])
-@pytest.mark.parametrize("L_MAX", [1, 5, 7])
-@pytest.mark.parametrize("BATCH_SIZE", [1, 20, 2000])
+@pytest.mark.parametrize("L1", [3, 5, 7])
+@pytest.mark.parametrize("L2", [3, 5, 7])
+@pytest.mark.parametrize("L_OUTPUT", [3, 5, 7])
+@pytest.mark.parametrize("BATCH_SIZE", [1, 20, 200])
 @pytest.mark.parametrize("N_FEATURES", [1, 20, 105])
 @pytest.mark.parametrize("dtype", [torch.float64])
 @pytest.mark.parametrize("device", ['cpu', 'cuda'])
-def test_backward_gradcheck(function, L_MAX, BATCH_SIZE, N_FEATURES, dtype, device):
+def test_backward_gradcheck(function, L1, L2, L_OUTPUT, BATCH_SIZE, N_FEATURES, dtype, device):
+    if (L_OUTPUT < abs(L1 - L2)) or (L_OUTPUT > L1 + L2):
+        pytest.skip()
     atol, rtol = (5e-2, 1e-3) if dtype == torch.float32 else (1e-7, 1e-8)
     if device == 'cpu' and function == accumulate:
         pytest.skip()
 
-    m1_aligned, m2_aligned, mu_aligned, multipliers = get_rule(L_MAX, dtype, device)
+    m1_aligned, m2_aligned, mu_aligned, multipliers = get_rule(L1, L2, L_OUTPUT, dtype, device)
 
     generator = torch.Generator(device=device)
     generator.manual_seed(0xDEADBEEF)
     X1 = torch.randn(
-        (BATCH_SIZE, N_FEATURES, 2 * L_MAX + 1),
+        (BATCH_SIZE, N_FEATURES, 2 * L1 + 1),
         requires_grad=True,
         generator=generator,
         dtype=dtype,
         device=device,
     )
     X2 = torch.randn(
-        (BATCH_SIZE, N_FEATURES, 2 * L_MAX + 1),
+        (BATCH_SIZE, N_FEATURES, 2 * L2 + 1),
         requires_grad=True,
         generator=generator,
         dtype=dtype,
@@ -249,7 +236,7 @@ def test_backward_gradcheck(function, L_MAX, BATCH_SIZE, N_FEATURES, dtype, devi
 
     assert torch.autograd.gradcheck(
         function,
-        (X1, X2, mu_aligned, 2 * L_MAX + 1, m1_aligned, m2_aligned, multipliers),
+        (X1, X2, mu_aligned, 2 * L_OUTPUT + 1, m1_aligned, m2_aligned, multipliers),
         fast_mode=True, atol=atol, rtol=rtol,
     )
 
