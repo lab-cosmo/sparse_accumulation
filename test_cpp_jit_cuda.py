@@ -6,16 +6,9 @@ from functools import partial
 import torch
 from torch.utils import cpp_extension
 import numpy as np
-from clebsch_gordan import ClebschGordan, get_real_clebsch_gordan
+from sparse_accumulation.clebsch_gordan import ClebschGordan, get_real_clebsch_gordan
 from sparse_accumulation_plain_torch import sparse_accumulation_loops
-
-cpp_extension.load(
-    name="sparse_accumulation_cuda",
-    sources=["cuda_optimized/sparse_accumulation_cuda_kernel2D.cu"],
-    is_python_module=False,
-    extra_cuda_cflags=None,
-    verbose=True,
-)
+from sparse_accumulation import accumulate
 
 
 def get_rule(L_MAX, dtype=torch.float64, device="cpu"):
@@ -96,7 +89,7 @@ def test_forward(L_MAX, BATCH_SIZE, N_FEATURES, dtype):
         active_dim=2,
     )
 
-    cuda_output = torch.ops.sparse_accumulation_cuda.forward(
+    cuda_output = accumulate(
         X1_d,
         X2_d,
         mu_aligned_d,
@@ -106,7 +99,7 @@ def test_forward(L_MAX, BATCH_SIZE, N_FEATURES, dtype):
         multipliers_d,
     )
 
-    cuda_output_cpu = cuda_output[0].cpu()
+    cuda_output_cpu = cuda_output.cpu()
     delta = python_loops_output - cuda_output_cpu
     relative_error = torch.amax(torch.abs(delta / python_loops_output))
 
@@ -183,15 +176,24 @@ def test_backward(L_MAX, BATCH_SIZE, N_FEATURES, seed, dtype):
         enable_timing=True
     )
     starter.record()
-    cuda_output = torch.ops.sparse_accumulation_cuda.backward(
-        output_grad_d,
+    
+    X1_d.requires_grad = True
+    X2_d.requires_grad = True
+    cuda_output = accumulate(
         X1_d,
         X2_d,
         mu_aligned_d,
+        2 * L_MAX + 1,
         m1_aligned_d,
         m2_aligned_d,
-        multipliers_d,
+        multipliers_d
     )
+    
+    cuda_output.backward(gradient=output_grad_d)
+    X1_grad_cuda = torch.detach(torch.clone(X1_d.grad))
+    X2_grad_cuda = torch.detach(torch.clone(X2_d.grad))
+    
+    
     torch.cuda.synchronize("cuda")
     ender.record()
     torch.cuda.synchronize("cuda")
@@ -200,8 +202,8 @@ def test_backward(L_MAX, BATCH_SIZE, N_FEATURES, seed, dtype):
     )  # torch.cuda.Event gives the time in milliseconds
     t3 = time()
     cuda_time = t3 - t2
-    X1_grad_cuda = cuda_output[0].cpu()
-    X2_grad_cuda = cuda_output[1].cpu()
+    X1_grad_cuda = X1_grad_cuda.cpu()
+    X2_grad_cuda = X2_grad_cuda.cpu()
 
     errmax1 = torch.amax(torch.abs(X1_grad_python_loops - X1_grad_cuda))
     errmax2 = torch.amax(torch.abs(X2_grad_python_loops - X2_grad_cuda))
@@ -229,37 +231,11 @@ def test_backward(L_MAX, BATCH_SIZE, N_FEATURES, seed, dtype):
     )
 
 
-class CudaSparseAccumulationFunction(torch.autograd.Function):
-    @staticmethod
-    def forward(ctx, X1, X2, mu, output_size, m1, m2, multipliers):
-        (output,) = torch.ops.sparse_accumulation_cuda.forward(
-            X1,
-            X2,
-            mu,
-            output_size,
-            m1,
-            m2,
-            multipliers,
-        )
-
-        ctx.save_for_backward(X1, X2, mu, m1, m2, multipliers)
-
-        return output
-
-    @staticmethod
-    def backward(ctx, grad_output):
-        X1, X2, mu, m1, m2, multipliers = ctx.saved_tensors
-
-        X1_grad, X2_grad = torch.ops.sparse_accumulation_cuda.backward(
-            grad_output, X1, X2, mu, m1, m2, multipliers
-        )
-
-        return X1_grad, X2_grad, None, None, None, None, None
 
 
 @pytest.mark.parametrize("function", [
     partial(sparse_accumulation_loops, active_dim=2),
-    CudaSparseAccumulationFunction.apply
+    accumulate
 ])
 @pytest.mark.parametrize("L_MAX", [1, 5, 7])
 @pytest.mark.parametrize("BATCH_SIZE", [1, 20, 2000])
@@ -268,7 +244,7 @@ class CudaSparseAccumulationFunction(torch.autograd.Function):
 @pytest.mark.parametrize("device", ['cpu', 'cuda'])
 def test_backward_gradcheck(function, L_MAX, BATCH_SIZE, N_FEATURES, dtype, device):
     atol, rtol = (5e-2, 1e-3) if dtype == torch.float32 else (1e-7, 1e-8)
-    if device == 'cpu' and function == CudaSparseAccumulationFunction.apply:
+    if device == 'cpu' and function == accumulate:
         pytest.skip()
 
     m1_aligned, m2_aligned, mu_aligned, multipliers = get_rule(L_MAX, dtype, device)
