@@ -403,7 +403,8 @@ div.rendered_html tbody tr:hover {
 <span class="n">mu</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">LongTensor</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
 
 <span class="n">C</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">FloatTensor</span><span class="p">([</span><span class="mf">0.17</span><span class="p">,</span> <span class="mf">0.23</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.9</span><span class="p">])</span>
-<br/></pre></div>
+<span class="n">output_size</span> <span class="o">=</span> <span class="mi">42</span>
+</pre></div>
 </div>
 </div>
 <p><strong>Important</strong> sparse accumulation operation requires mu tensor to be sorted to work correctly.</p>
@@ -429,7 +430,7 @@ div.rendered_html tbody tr:hover {
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">output</span> <span class="o">=</span> <span class="n">accumulate</span><span class="p">(</span><span class="n">X1</span><span class="p">,</span> <span class="n">X2</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="mi">42</span><span class="p">,</span> <span class="n">m1</span><span class="p">,</span> <span class="n">m2</span><span class="p">,</span> <span class="n">C</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">output</span> <span class="o">=</span> <span class="n">accumulate</span><span class="p">(</span><span class="n">X1</span><span class="p">,</span> <span class="n">X2</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">output_size</span><span class="p">,</span> <span class="n">m1</span><span class="p">,</span> <span class="n">m2</span><span class="p">,</span> <span class="n">C</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">output</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
 </pre></div>
 </div>

@@ -50,7 +50,8 @@
     "m2 = torch.LongTensor([0, 0, 3, 1])\n",
     "mu = torch.LongTensor([0, 3, 1, 2])\n",
     "\n",
-    "C = torch.FloatTensor([0.17, 0.23, 0.4, -0.9])\n"
+    "C = torch.FloatTensor([0.17, 0.23, 0.4, -0.9])\n",
+    "output_size = 42"
    ]
   },
   {
@@ -109,7 +110,7 @@
     }
    ],
    "source": [
-    "output = accumulate(X1, X2, mu, 42, m1, m2, C)\n",
+    "output = accumulate(X1, X2, mu, output_size, m1, m2, C)\n",
     "print(output.shape, output.device)"
    ]
   },
