@@ -1,4 +1,3 @@
-from time import time
 import os
 import pytest
 from functools import partial
@@ -149,8 +148,7 @@ def test_backward(L_MAX, BATCH_SIZE, N_FEATURES, seed, dtype):
 
     X1.requires_grad = True
     X2.requires_grad = True
-    t1 = time()
-
+   
     python_loops_output = sparse_accumulation_loops(
         X1,
         X2,
@@ -167,16 +165,10 @@ def test_backward(L_MAX, BATCH_SIZE, N_FEATURES, seed, dtype):
     X1_grad_python_loops = torch.detach(torch.clone(X1.grad))
     X2_grad_python_loops = torch.detach(torch.clone(X2.grad))
 
-    t2 = time()
-    python_time = t2 - t1
+   
     output_grad_d = output_grad.clone().cuda()
 
-    torch.cuda.synchronize("cuda")
-    starter, ender = torch.cuda.Event(enable_timing=True), torch.cuda.Event(
-        enable_timing=True
-    )
-    starter.record()
-    
+  
     X1_d.requires_grad = True
     X2_d.requires_grad = True
     cuda_output = accumulate(
@@ -194,14 +186,7 @@ def test_backward(L_MAX, BATCH_SIZE, N_FEATURES, seed, dtype):
     X2_grad_cuda = torch.detach(torch.clone(X2_d.grad))
     
     
-    torch.cuda.synchronize("cuda")
-    ender.record()
-    torch.cuda.synchronize("cuda")
-    cuda_Event_time = (
-        starter.elapsed_time(ender) / 1000
-    )  # torch.cuda.Event gives the time in milliseconds
-    t3 = time()
-    cuda_time = t3 - t2
+   
     X1_grad_cuda = X1_grad_cuda.cpu()
     X2_grad_cuda = X2_grad_cuda.cpu()
 
@@ -218,10 +203,6 @@ def test_backward(L_MAX, BATCH_SIZE, N_FEATURES, seed, dtype):
     # print(f"{X2_grad_cuda=}")
     # print(f"{X2_grad_python_loops=}")
     # assert torch.allclose(python_loops_output , cuda_output_cpu,atol=atol)
-    print(f"{python_time=} s")
-    print(f"{cuda_time=} s")
-    print(f"{cuda_Event_time=} s")
-    print(f"python_time/cuda_time = {python_time/cuda_time} ")
 
     assert torch.allclose(
         X1_grad_python_loops, X1_grad_cuda, atol=atol, rtol=rtol
