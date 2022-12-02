@@ -7,7 +7,7 @@
 .. toctree::
    :glob:
    :maxdepth: 1
-   :caption: Usage
+   :caption: Tutorial
 
    tutorial  
    
@@ -17,4 +17,12 @@
    :maxdepth: 1
    :caption: Benchmarks
 
-.. include:: benchmarks.rst
+   benchmarks
+   
+   
+.. toctree::
+   :glob:
+   :maxdepth: 1
+   :caption: Reference Guide
+
+   reference_guide
