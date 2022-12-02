@@ -17,4 +17,4 @@
    :maxdepth: 1
    :caption: Benchmarks
 
-.. include:: benchmarks.rst
+    benchmarks
