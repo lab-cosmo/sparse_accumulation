@@ -50,4 +50,4 @@ cpu tests:
 Documentation
 +++++++++++++
 
-Documentation can be found `here <https://lab-cosmo.github.io/sparse_accumulation/index.html#>`_
+Documentation can be found `here <https://lab-cosmo.github.io/sparse_accumulation/>`_
