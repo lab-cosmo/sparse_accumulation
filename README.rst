@@ -10,6 +10,7 @@ Sparse accumulation
 This package contains significantly optimized CPU and GPU PyTorch extensions for the operation we call sparse accumulation. This operation takes two input arrays - X_1 and X_2, and produces an output one, given the transformation rule defined by one-dimensional arrays m_1, m_2, mu, and C. The functional form can be best explained by the following pseudocode:
 
 .. code-block:: python
+
     output = torch.zeros([..., output_size])
     for index in range(m_1.shape[0]):
         output[..., mu[index]] += X_1[..., m_1[index]] * X_2[..., m_2[index]] * C[index]
