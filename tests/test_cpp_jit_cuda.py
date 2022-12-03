@@ -6,7 +6,7 @@ import torch
 from torch.utils import cpp_extension
 import numpy as np
 from sparse_accumulation.clebsch_gordan import ClebschGordan, get_real_clebsch_gordan
-from sparse_accumulation_plain_torch import sparse_accumulation_loops
+from sparse_accumulation.reference_implementations import sparse_accumulation_loops
 from sparse_accumulation import accumulate, get_cg_transformation_rule
 
 

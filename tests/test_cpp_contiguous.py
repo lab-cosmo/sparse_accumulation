@@ -1,6 +1,6 @@
 import torch
 from sparse_accumulation.clebsch_gordan import get_real_clebsch_gordan, ClebschGordan
-from sparse_accumulation_plain_torch import sparse_accumulation_loops
+from sparse_accumulation.reference_implementations import sparse_accumulation_loops
 from sparse_accumulation.cpu_extension import sparse_accumulation_active_dim_first, sparse_accumulation_active_dim_middle
 from sparse_accumulation import accumulate
 
