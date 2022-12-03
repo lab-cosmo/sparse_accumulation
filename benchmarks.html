@@ -15,9 +15,7 @@
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
-        <script src="_static/sphinx_highlight.js"></script>
         <script>let toggleHintShow = 'Click to show';</script>
         <script>let toggleHintHide = 'Click to hide';</script>
         <script>let toggleOpenOnPrint = 'true';</script>
@@ -46,17 +44,21 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Tutorial</span></p>
+              <p class="caption"><span class="caption-text">Tutorial</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Sparse accumulation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html#[optional]-Clebsch-Gordan-iteration">[optional] Clebsch-Gordan iteration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html#Outdated">Outdated</a></li>
 </ul>
-<p class="caption" role="heading"><span class="caption-text">Benchmarks</span></p>
+<p class="caption"><span class="caption-text">Benchmarks</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Benchmarks</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Benchmarks</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#first-benchmark-output">First benchmark output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#second-benchmark-output">Second benchmark output</a></li>
 </ul>
-<p class="caption" role="heading"><span class="caption-text">Reference Guide</span></p>
+</li>
+</ul>
+<p class="caption"><span class="caption-text">Reference Guide</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="reference_guide.html">accumulate</a></li>
 <li class="toctree-l1"><a class="reference internal" href="reference_guide.html#get-cg-transformation-rule">get_cg_transformation_rule</a></li>
@@ -76,8 +78,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a></li>
-      <li class="breadcrumb-item active">Benchmarks</li>
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Benchmarks</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/benchmarks.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -112,8 +114,118 @@
 }
 </style>
 <section id="benchmarks">
-<h1>Benchmarks<a class="headerlink" href="#benchmarks" title="Permalink to this heading"></a></h1>
-<p>[todo] benchmarks here</p>
+<h1>Benchmarks<a class="headerlink" href="#benchmarks" title="Permalink to this headline"></a></h1>
+<section id="first-benchmark-output">
+<h2>First benchmark output<a class="headerlink" href="#first-benchmark-output" title="Permalink to this headline"></a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Using</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">pozdn</span><span class="o">/.</span><span class="n">cache</span><span class="o">/</span><span class="n">torch_extensions</span><span class="o">/</span><span class="n">py38_cu111</span> <span class="k">as</span> <span class="n">PyTorch</span> <span class="n">extensions</span> <span class="n">root</span><span class="o">...</span>
+<span class="n">Detected</span> <span class="n">CUDA</span> <span class="n">files</span><span class="p">,</span> <span class="n">patching</span> <span class="n">ldflags</span>
+<span class="n">Emitting</span> <span class="n">ninja</span> <span class="n">build</span> <span class="n">file</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">pozdn</span><span class="o">/.</span><span class="n">cache</span><span class="o">/</span><span class="n">torch_extensions</span><span class="o">/</span><span class="n">py38_cu111</span><span class="o">/</span><span class="n">sparse_accumulation_cuda</span><span class="o">/</span><span class="n">build</span><span class="o">.</span><span class="n">ninja</span><span class="o">...</span>
+<span class="n">Building</span> <span class="n">extension</span> <span class="n">module</span> <span class="n">sparse_accumulation_cuda</span><span class="o">...</span>
+<span class="n">Allowing</span> <span class="n">ninja</span> <span class="n">to</span> <span class="nb">set</span> <span class="n">a</span> <span class="n">default</span> <span class="n">number</span> <span class="n">of</span> <span class="n">workers</span><span class="o">...</span> <span class="p">(</span><span class="n">overridable</span> <span class="n">by</span> <span class="n">setting</span> <span class="n">the</span> <span class="n">environment</span> <span class="n">variable</span> <span class="n">MAX_JOBS</span><span class="o">=</span><span class="n">N</span><span class="p">)</span>
+<span class="n">ninja</span><span class="p">:</span> <span class="n">no</span> <span class="n">work</span> <span class="n">to</span> <span class="n">do</span><span class="o">.</span>
+<span class="n">Loading</span> <span class="n">extension</span> <span class="n">module</span> <span class="n">sparse_accumulation_cuda</span><span class="o">...</span>
+<span class="n">L_MAX</span><span class="o">=</span><span class="mi">8</span><span class="p">;</span> <span class="n">BATCH_SIZE</span><span class="o">=</span><span class="mi">1000</span><span class="p">;</span> <span class="n">N_FEATURES</span><span class="o">=</span><span class="mi">200</span>
+<span class="n">preparing</span> <span class="n">real</span> <span class="n">life</span> <span class="n">transformation</span> <span class="n">rule</span>
+<span class="n">transformation</span> <span class="n">rule</span> <span class="ow">is</span> <span class="n">computed</span>
+<span class="o">*************</span>
+<span class="n">CUDA</span>
+<span class="o">*************</span>
+<span class="o">***</span><span class="n">forward</span><span class="o">***</span>
+<span class="n">python</span> <span class="n">loops</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">0</span><span class="p">;</span> <span class="n">forward</span><span class="p">;</span> <span class="n">cuda</span><span class="p">:</span>  <span class="mf">0.02626611942715115</span>
+<span class="n">torch</span> <span class="n">index_add_</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">0</span><span class="p">;</span> <span class="n">forward</span><span class="p">;</span> <span class="n">cuda</span><span class="p">:</span>  <span class="mf">0.0067368142869737415</span>
+
+<span class="n">python</span> <span class="n">loops</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">1</span><span class="p">;</span> <span class="n">forward</span><span class="p">;</span> <span class="n">cuda</span><span class="p">:</span>  <span class="mf">0.028479398939344615</span>
+<span class="n">torch</span> <span class="n">index_add_</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">1</span><span class="p">;</span> <span class="n">forward</span><span class="p">;</span> <span class="n">cuda</span><span class="p">:</span>  <span class="mf">0.005996817800733778</span>
+
+<span class="n">python</span> <span class="n">loops</span> <span class="n">first</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">2</span><span class="p">;</span> <span class="n">forward</span><span class="p">;</span> <span class="n">cuda</span><span class="p">:</span>  <span class="mf">0.09641836547851562</span>
+<span class="n">torch</span> <span class="n">index_add_</span> <span class="n">first</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">2</span><span class="p">;</span> <span class="n">forward</span><span class="p">;</span> <span class="n">cuda</span><span class="p">:</span>  <span class="mf">0.006406335830688476</span>
+<span class="n">CUDA</span> <span class="n">kernel</span> <span class="n">first</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">2</span><span class="p">;</span> <span class="n">forward</span><span class="p">;</span> <span class="n">cuda</span><span class="p">:</span>  <span class="mf">0.0005303679704666138</span>
+
+<span class="n">python</span> <span class="n">loops</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">2</span><span class="p">;</span> <span class="n">forward</span><span class="p">;</span> <span class="n">cuda</span><span class="p">:</span>  <span class="mf">0.09575971052381728</span>
+<span class="n">torch</span> <span class="n">index_add_</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">2</span><span class="p">;</span> <span class="n">forward</span><span class="p">;</span> <span class="n">cuda</span><span class="p">:</span>  <span class="mf">0.006397336800893148</span>
+<span class="n">CUDA</span> <span class="n">kernel</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">2</span><span class="p">;</span> <span class="n">forward</span><span class="p">;</span> <span class="n">cuda</span><span class="p">:</span>  <span class="mf">0.0004992959996064504</span>
+<span class="o">***</span><span class="n">backward</span><span class="o">***</span>
+<span class="n">python</span> <span class="n">loops</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">0</span><span class="p">;</span> <span class="n">backward</span><span class="p">;</span> <span class="n">cuda</span><span class="p">:</span>  <span class="mf">0.2310748816596137</span>
+<span class="n">torch</span> <span class="n">index_add_</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">0</span><span class="p">;</span> <span class="n">backward</span><span class="p">;</span> <span class="n">cuda</span><span class="p">:</span>  <span class="mf">0.015111829439798989</span>
+
+<span class="n">python</span> <span class="n">loops</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">1</span><span class="p">;</span> <span class="n">backward</span><span class="p">;</span> <span class="n">cuda</span><span class="p">:</span>  <span class="mf">0.3074806416829427</span>
+<span class="n">torch</span> <span class="n">index_add_</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">1</span><span class="p">;</span> <span class="n">backward</span><span class="p">;</span> <span class="n">cuda</span><span class="p">:</span>  <span class="mf">0.015122151056925456</span>
+
+<span class="n">python</span> <span class="n">loops</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">2</span><span class="p">;</span> <span class="n">backward</span><span class="p">;</span> <span class="n">cuda</span><span class="p">:</span>  <span class="mf">0.10060705057779948</span>
+<span class="n">torch</span> <span class="n">index_add_</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">2</span><span class="p">;</span> <span class="n">backward</span><span class="p">;</span> <span class="n">cuda</span><span class="p">:</span>  <span class="mf">0.10064567142062716</span>
+<span class="n">CUDA</span> <span class="n">kernel</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">2</span><span class="p">;</span> <span class="n">backward</span><span class="p">;</span> <span class="n">cuda</span><span class="p">:</span>  <span class="mf">0.001021127118004693</span>
+<span class="o">*************</span>
+<span class="n">CPU</span>
+<span class="o">*************</span>
+<span class="o">***</span><span class="n">forward</span><span class="o">***</span>
+<span class="n">python</span> <span class="n">loops</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">0</span><span class="p">;</span> <span class="n">forward</span><span class="p">;</span> <span class="n">cpu</span><span class="p">:</span>  <span class="mf">0.10445965660942926</span>
+<span class="n">torch</span> <span class="n">index_add_</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">0</span><span class="p">;</span> <span class="n">forward</span><span class="p">;</span> <span class="n">cpu</span><span class="p">:</span>  <span class="mf">0.4440735975901286</span>
+<span class="n">cpp</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">0</span><span class="p">;</span> <span class="n">forward</span><span class="p">;</span> <span class="n">cpu</span><span class="p">:</span>  <span class="mf">0.04300083054436578</span>
+
+<span class="n">python</span> <span class="n">loops</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">1</span><span class="p">;</span> <span class="n">forward</span><span class="p">;</span> <span class="n">cpu</span><span class="p">:</span>  <span class="mf">0.13819887903001574</span>
+<span class="n">torch</span> <span class="n">index_add_</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">1</span><span class="p">;</span> <span class="n">forward</span><span class="p">;</span> <span class="n">cpu</span><span class="p">:</span>  <span class="mf">0.4437105390760634</span>
+<span class="n">cpp</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">1</span><span class="p">;</span> <span class="n">forward</span><span class="p">;</span> <span class="n">cpu</span><span class="p">:</span>  <span class="mf">0.0679466724395752</span>
+
+<span class="n">python</span> <span class="n">loops</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">2</span><span class="p">;</span> <span class="n">forward</span><span class="p">;</span> <span class="n">cpu</span><span class="p">:</span> <span class="mf">1.0245144102308485</span>
+<span class="n">torch</span> <span class="n">index_add_</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">2</span><span class="p">;</span> <span class="n">forward</span><span class="p">;</span> <span class="n">cpu</span><span class="p">:</span>  <span class="mf">1.4955637719896104</span>
+<span class="n">cpp</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">2</span><span class="p">;</span> <span class="n">forward</span><span class="p">;</span> <span class="n">cpu</span>  <span class="mf">0.13358383708530003</span>
+<span class="o">***</span><span class="n">backward</span><span class="o">***</span>
+<span class="n">python</span> <span class="n">loops</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">0</span><span class="p">;</span> <span class="n">backward</span><span class="p">;</span> <span class="n">cpu</span>  <span class="mf">6.009502304924859</span>
+<span class="n">torch</span> <span class="n">index_add_</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">0</span><span class="p">;</span> <span class="n">backward</span><span class="p">;</span> <span class="n">cpu</span>  <span class="mf">0.8905059761471219</span>
+<span class="n">cpp</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">0</span><span class="p">;</span> <span class="n">backward</span><span class="p">;</span> <span class="n">cpu</span>  <span class="mf">0.1339370674557156</span>
+
+<span class="n">python</span> <span class="n">loops</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">1</span><span class="p">;</span> <span class="n">backward</span><span class="p">;</span> <span class="n">cpu</span>  <span class="mf">8.616596115960014</span>
+<span class="n">torch</span> <span class="n">index_add_</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">1</span><span class="p">;</span> <span class="n">backward</span><span class="p">;</span> <span class="n">cpu</span>  <span class="mf">0.9371486769782172</span>
+<span class="n">cpp</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">1</span><span class="p">;</span> <span class="n">backward</span><span class="p">;</span> <span class="n">cpu</span>  <span class="mf">0.16515795389811197</span>
+
+<span class="n">python</span> <span class="n">loops</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">2</span><span class="p">;</span> <span class="n">backward</span><span class="p">;</span> <span class="n">cpu</span>  <span class="mf">3.100877947277493</span>
+<span class="n">torch</span> <span class="n">index_add_</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">2</span><span class="p">;</span> <span class="n">backward</span><span class="p">;</span> <span class="n">cpu</span>  <span class="mf">3.103803899553087</span>
+<span class="n">cpp</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">2</span><span class="p">;</span> <span class="n">backward</span><span class="p">;</span> <span class="n">cpu</span>  <span class="mf">0.2753954463534885</span>
+</pre></div>
+</div>
+</section>
+<section id="second-benchmark-output">
+<h2>Second benchmark output<a class="headerlink" href="#second-benchmark-output" title="Permalink to this headline"></a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Using</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">pozdn</span><span class="o">/.</span><span class="n">cache</span><span class="o">/</span><span class="n">torch_extensions</span><span class="o">/</span><span class="n">py38_cu111</span> <span class="k">as</span> <span class="n">PyTorch</span> <span class="n">extensions</span> <span class="n">root</span><span class="o">...</span>
+<span class="n">Detected</span> <span class="n">CUDA</span> <span class="n">files</span><span class="p">,</span> <span class="n">patching</span> <span class="n">ldflags</span>
+<span class="n">Emitting</span> <span class="n">ninja</span> <span class="n">build</span> <span class="n">file</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">pozdn</span><span class="o">/.</span><span class="n">cache</span><span class="o">/</span><span class="n">torch_extensions</span><span class="o">/</span><span class="n">py38_cu111</span><span class="o">/</span><span class="n">sparse_accumulation_cuda</span><span class="o">/</span><span class="n">build</span><span class="o">.</span><span class="n">ninja</span><span class="o">...</span>
+<span class="n">Building</span> <span class="n">extension</span> <span class="n">module</span> <span class="n">sparse_accumulation_cuda</span><span class="o">...</span>
+<span class="n">Allowing</span> <span class="n">ninja</span> <span class="n">to</span> <span class="nb">set</span> <span class="n">a</span> <span class="n">default</span> <span class="n">number</span> <span class="n">of</span> <span class="n">workers</span><span class="o">...</span> <span class="p">(</span><span class="n">overridable</span> <span class="n">by</span> <span class="n">setting</span> <span class="n">the</span> <span class="n">environment</span> <span class="n">variable</span> <span class="n">MAX_JOBS</span><span class="o">=</span><span class="n">N</span><span class="p">)</span>
+<span class="n">ninja</span><span class="p">:</span> <span class="n">no</span> <span class="n">work</span> <span class="n">to</span> <span class="n">do</span><span class="o">.</span>
+<span class="n">Loading</span> <span class="n">extension</span> <span class="n">module</span> <span class="n">sparse_accumulation_cuda</span><span class="o">...</span>
+<span class="n">transformation</span> <span class="n">rule</span> <span class="ow">is</span> <span class="n">computed</span>
+<span class="n">L_MAX</span><span class="o">=</span><span class="mi">5</span><span class="p">;</span> <span class="n">BATCH_SIZE</span><span class="o">=</span><span class="mi">10000</span><span class="p">;</span> <span class="n">N_FEATURES</span><span class="o">=</span><span class="mi">200</span><span class="p">;</span> <span class="n">sparse</span> <span class="n">dim</span> <span class="n">length</span> <span class="o">=</span> <span class="mi">11</span><span class="p">;</span> <span class="n">sparse</span> <span class="n">indices</span> <span class="n">length</span> <span class="o">=</span> <span class="mi">126</span>
+<span class="n">preparing</span> <span class="n">real</span> <span class="n">life</span> <span class="n">transformation</span> <span class="n">rule</span>
+<span class="o">*************</span>
+<span class="n">CUDA</span>
+<span class="o">*************</span>
+<span class="o">***</span><span class="n">forward</span><span class="o">***</span>
+<span class="n">python</span> <span class="n">loops</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">0</span><span class="p">;</span> <span class="n">forward</span><span class="p">;</span> <span class="n">cuda</span><span class="p">:</span>  <span class="mf">0.025215061399671765</span>
+<span class="n">torch</span> <span class="n">index_add_</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">0</span><span class="p">;</span> <span class="n">forward</span><span class="p">;</span> <span class="n">cuda</span><span class="p">:</span>  <span class="mf">0.026948707580566406</span>
+
+<span class="n">python</span> <span class="n">loops</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">1</span><span class="p">;</span> <span class="n">forward</span><span class="p">;</span> <span class="n">cuda</span><span class="p">:</span>  <span class="mf">0.03350805706448025</span>
+<span class="n">torch</span> <span class="n">index_add_</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">1</span><span class="p">;</span> <span class="n">forward</span><span class="p">;</span> <span class="n">cuda</span><span class="p">:</span>  <span class="mf">0.02625405163235135</span>
+
+<span class="n">python</span> <span class="n">loops</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">2</span><span class="p">;</span> <span class="n">forward</span><span class="p">;</span> <span class="n">cuda</span><span class="p">:</span>  <span class="mf">0.19782067362467448</span>
+<span class="n">torch</span> <span class="n">index_add_</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">2</span><span class="p">;</span> <span class="n">forward</span><span class="p">;</span> <span class="n">cuda</span><span class="p">:</span>  <span class="mf">0.02156950018141005</span>
+<span class="n">dense</span> <span class="n">matrix</span> <span class="n">multiply</span><span class="p">:</span>  <span class="mf">0.007511555565728082</span>
+<span class="n">sparse</span> <span class="n">matrix</span> <span class="n">multiply</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">2</span><span class="p">;</span> <span class="n">forward</span><span class="p">;</span> <span class="n">cuda</span><span class="p">:</span>  <span class="mf">0.17568610127766926</span>
+<span class="n">sparse</span> <span class="n">matrix</span> <span class="n">optimized</span> <span class="n">multiply</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">0</span><span class="p">;</span> <span class="n">forward</span><span class="p">;</span> <span class="n">cuda</span><span class="p">:</span>  <span class="mf">0.2286965043809679</span>
+<span class="n">CUDA</span> <span class="n">kernel</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">2</span><span class="p">;</span> <span class="n">forward</span><span class="p">;</span> <span class="n">cuda</span><span class="p">:</span>  <span class="mf">0.0018692764573627048</span>
+<span class="o">***</span><span class="n">backward</span><span class="o">***</span>
+<span class="n">python</span> <span class="n">loops</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">0</span><span class="p">;</span> <span class="n">backward</span><span class="p">;</span> <span class="n">cuda</span><span class="p">:</span>  <span class="mf">0.4620384724934896</span>
+<span class="n">torch</span> <span class="n">index_add_</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">0</span><span class="p">;</span> <span class="n">backward</span><span class="p">;</span> <span class="n">cuda</span><span class="p">:</span>  <span class="mf">0.03216430155436198</span>
+
+<span class="n">python</span> <span class="n">loops</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">1</span><span class="p">;</span> <span class="n">backward</span><span class="p">;</span> <span class="n">cuda</span><span class="p">:</span>  <span class="mf">0.5971531100802951</span>
+<span class="n">torch</span> <span class="n">index_add_</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">1</span><span class="p">;</span> <span class="n">backward</span><span class="p">;</span> <span class="n">cuda</span><span class="p">:</span>  <span class="mf">0.035279142591688364</span>
+
+<span class="n">python</span> <span class="n">loops</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">2</span><span class="p">;</span> <span class="n">backward</span><span class="p">;</span> <span class="n">cuda</span><span class="p">:</span>  <span class="mf">0.309046383327908</span>
+<span class="n">torch</span> <span class="n">index_add_</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">2</span><span class="p">;</span> <span class="n">backward</span><span class="p">;</span> <span class="n">cuda</span><span class="p">:</span>  <span class="mf">0.3086910502115885</span>
+<span class="n">CUDA</span> <span class="n">kernel</span><span class="p">;</span> <span class="n">active</span> <span class="n">dim</span> <span class="mi">2</span><span class="p">;</span> <span class="n">backward</span><span class="p">;</span> <span class="n">cuda</span><span class="p">:</span>  <span class="mf">0.004007651567459107</span>
+<span class="n">dense</span> <span class="n">matrix</span> <span class="n">multiply</span><span class="p">:</span>  <span class="mf">0.023251587549845378</span>
+</pre></div>
+</div>
+</section>
 </section>
 
 

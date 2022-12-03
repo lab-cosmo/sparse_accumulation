@@ -15,17 +15,15 @@
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
-        <script src="_static/sphinx_highlight.js"></script>
         <script>let toggleHintShow = 'Click to show';</script>
         <script>let toggleHintHide = 'Click to hide';</script>
         <script>let toggleOpenOnPrint = 'true';</script>
         <script src="_static/togglebutton.js"></script>
         <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
         <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
-        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -48,7 +46,7 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Tutorial</span></p>
+              <p class="caption"><span class="caption-text">Tutorial</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Sparse accumulation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#Preparing-a-dummy-data">Preparing a dummy data</a></li>
@@ -62,11 +60,11 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="#Outdated">Outdated</a></li>
 </ul>
-<p class="caption" role="heading"><span class="caption-text">Benchmarks</span></p>
+<p class="caption"><span class="caption-text">Benchmarks</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="benchmarks.html">Benchmarks</a></li>
 </ul>
-<p class="caption" role="heading"><span class="caption-text">Reference Guide</span></p>
+<p class="caption"><span class="caption-text">Reference Guide</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="reference_guide.html">accumulate</a></li>
 <li class="toctree-l1"><a class="reference internal" href="reference_guide.html#get-cg-transformation-rule">get_cg_transformation_rule</a></li>
@@ -86,8 +84,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a></li>
-      <li class="breadcrumb-item active">Sparse accumulation</li>
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Sparse accumulation</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/tutorial.ipynb.txt" rel="nofollow"> View page source</a>
       </li>
@@ -207,11 +205,10 @@ div.nboutput.container div.prompt > div {
     }
 }
 
-/* disable scrollbars and line breaks on prompts */
+/* disable scrollbars on prompts */
 div.nbinput.container div.prompt pre,
 div.nboutput.container div.prompt pre {
     overflow: hidden;
-    white-space: pre;
 }
 
 /* input/output area */
@@ -377,7 +374,7 @@ div.rendered_html tbody tr:hover {
 }
 </style>
 <section id="Sparse-accumulation">
-<h1>Sparse accumulation<a class="headerlink" href="#Sparse-accumulation" title="Permalink to this heading"></a></h1>
+<h1>Sparse accumulation<a class="headerlink" href="#Sparse-accumulation" title="Permalink to this headline"></a></h1>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
@@ -389,7 +386,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </div>
 <section id="Preparing-a-dummy-data">
-<h2>Preparing a dummy data<a class="headerlink" href="#Preparing-a-dummy-data" title="Permalink to this heading"></a></h2>
+<h2>Preparing a dummy data<a class="headerlink" href="#Preparing-a-dummy-data" title="Permalink to this headline"></a></h2>
 <p>Let’s prepare some dummy data to play with:</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
@@ -424,7 +421,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </section>
 <section id="accumulate-function">
-<h2><code class="docutils literal notranslate"><span class="pre">accumulate</span></code> function<a class="headerlink" href="#accumulate-function" title="Permalink to this heading"></a></h2>
+<h2><code class="docutils literal notranslate"><span class="pre">accumulate</span></code> function<a class="headerlink" href="#accumulate-function" title="Permalink to this headline"></a></h2>
 <p>The main function which does sparse accumulation operation is called <code class="docutils literal notranslate"><span class="pre">accumulate</span></code>. It can be invoked like this:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
@@ -480,7 +477,7 @@ torch.Size([10, 20, 42]) cuda:0
 </section>
 </section>
 <section id="[optional]-Clebsch-Gordan-iteration">
-<h1>[optional] Clebsch-Gordan iteration<a class="headerlink" href="#[optional]-Clebsch-Gordan-iteration" title="Permalink to this heading"></a></h1>
+<h1>[optional] Clebsch-Gordan iteration<a class="headerlink" href="#[optional]-Clebsch-Gordan-iteration" title="Permalink to this headline"></a></h1>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
@@ -490,7 +487,7 @@ torch.Size([10, 20, 42]) cuda:0
 </div>
 </div>
 <section id="precomputing-Clebsch-Gordan-transformation-rule">
-<h2>precomputing Clebsch-Gordan transformation rule<a class="headerlink" href="#precomputing-Clebsch-Gordan-transformation-rule" title="Permalink to this heading"></a></h2>
+<h2>precomputing Clebsch-Gordan transformation rule<a class="headerlink" href="#precomputing-Clebsch-Gordan-transformation-rule" title="Permalink to this headline"></a></h2>
 <p>If we want the sparse accumulation operation to do the actual Clebsch-Gordan iteration we need to precompute the corresponding transformation rule and populate the arrays <code class="docutils literal notranslate"><span class="pre">m1</span></code>, <code class="docutils literal notranslate"><span class="pre">m2</span></code>, <code class="docutils literal notranslate"><span class="pre">mu</span></code> and <code class="docutils literal notranslate"><span class="pre">C</span></code> with the actual Clebsch-Gordan coefficients.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
@@ -535,7 +532,7 @@ torch.Size([10, 20, 11])
 </div>
 </section>
 <section id="Clebsch-Gordan-Calculator">
-<h2>Clebsch-Gordan Calculator<a class="headerlink" href="#Clebsch-Gordan-Calculator" title="Permalink to this heading"></a></h2>
+<h2>Clebsch-Gordan Calculator<a class="headerlink" href="#Clebsch-Gordan-Calculator" title="Permalink to this headline"></a></h2>
 <p>It makes sense to wrap up the mentioned steps into the class, where the CG transformation rule is computed during initialization, and next is used in the forward method. We provide such a class called <code class="docutils literal notranslate"><span class="pre">CGCalculatorSingle</span></code></p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
@@ -587,7 +584,7 @@ torch.Size([10, 20, 11]) cuda:0
 </section>
 </section>
 <section id="Outdated">
-<h1>Outdated<a class="headerlink" href="#Outdated" title="Permalink to this heading"></a></h1>
+<h1>Outdated<a class="headerlink" href="#Outdated" title="Permalink to this headline"></a></h1>
 <p>The goal is to compute this for all <span class="math notranslate nohighlight">\(\mu\)</span>:</p>
 <p><span class="math notranslate nohighlight">\(\text{Output}[:, :, \mu] = \sum\limits_{m_1, m_2} \text{X_1}[:, :, m_1] * \text{X_2}[:, :, m_2] * C_{m_1, m_2, \mu}\)</span></p>
 <p>This is the subpart of the Clebsch-Gordan iteration for fixed l1, l2, and l. The first two dimensions are the “dense” ones, so the same operation is performed for all the indices in the first two dimensions.</p>
