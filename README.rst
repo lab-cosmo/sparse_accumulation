@@ -27,7 +27,7 @@ Our benchmarks show that our custom PyTorch extension while being memory efficie
 
 [todo] benchmark against e3nn
 
-All the benchmarks measurements and reference implementations details can be found in the [todo] benchmarks section. 
+All the benchmarks measurements and reference implementations details can be found in the [todo: structure results into the table] `benchmarks section <https://lab-cosmo.github.io/sparse_accumulation/benchmarks>`_.
 
 ++++++++++++
 Installation
