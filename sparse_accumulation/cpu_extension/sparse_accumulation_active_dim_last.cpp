@@ -1,6 +1,7 @@
 #include <torch/extension.h>
 
 #include <iostream>
+#include <omp.h>
 using namespace torch::indexing;
 
 std::vector<torch::Tensor> sparse_accumulation_active_dim_last_contiguous_backward(torch::Tensor d_output,
@@ -33,16 +34,17 @@ std::vector<torch::Tensor> sparse_accumulation_active_dim_last_contiguous_backwa
     long output_active_dim = d_output.sizes()[2];
     long X1_active_dim = X1.sizes()[2];
     long X2_active_dim = X2.sizes()[2];    
-    
-    long shift_output = 0;
-    long shift_X1 = 0;
-    long shift_X2 = 0;
-    
-    float grad;
+
+    #pragma omp parallel for
     for (int index_first = 0; index_first < first_size; ++index_first){
+        #pragma omp parallel for
         for (int index_second = 0; index_second < second_size; ++index_second) {
+            long shift_number = index_first * second_size + index_second;
+            long shift_output = shift_number * output_active_dim;
+            long shift_X1 = shift_number * X1_active_dim;
+            long shift_X2 = shift_number * X2_active_dim;
             for (int index = 0; index < active_size; ++index) {
-                grad = d_output_ptr[shift_output + idx_output_ptr[index]] * multipliers_ptr[index];
+                float grad = d_output_ptr[shift_output + idx_output_ptr[index]] * multipliers_ptr[index];
                 d_X1_ptr[shift_X1 + idx_1_ptr[index]] += grad * X2_ptr[shift_X2 + idx_2_ptr[index]];
                 d_X2_ptr[shift_X2 + idx_2_ptr[index]] += grad * X1_ptr[shift_X1 + idx_1_ptr[index]];
             }
@@ -86,15 +88,17 @@ torch::Tensor sparse_accumulation_active_dim_last_contiguous_forward(torch::Tens
     long shift_X1 = 0;
     long shift_X2 = 0;
     
-    
+    #pragma omp parallel for
     for (int index_first = 0; index_first < first_size; ++index_first){
+        #pragma omp parallel for
         for (int index_second = 0; index_second < second_size; ++index_second) {
+            long shift_number = index_first * second_size + index_second;
+            long shift_output = shift_number * output_active_dim;
+            long shift_X1 = shift_number * X1_active_dim;
+            long shift_X2 = shift_number * X2_active_dim;
             for (int index = 0; index < active_size; ++index) { 
                 output_ptr[shift_output + idx_output_ptr[index]] += multipliers_ptr[index] * X1_ptr[shift_X1 + idx_1_ptr[index]] * X2_ptr[shift_X2 + idx_2_ptr[index]];                                             
-            }
-            shift_output += output_active_dim;
-            shift_X1 += X1_active_dim;
-            shift_X2 += X2_active_dim; 
+            } 
         }
     }
     return output;    

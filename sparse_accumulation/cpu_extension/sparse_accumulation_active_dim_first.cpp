@@ -1,8 +1,8 @@
 #include <torch/extension.h>
 
 #include <iostream>
+#include <omp.h>
 using namespace torch::indexing;
-
 
 std::vector<torch::Tensor> sparse_accumulation_active_dim_first_contiguous_backward(torch::Tensor d_output,
                                                         torch::Tensor X1,
@@ -37,14 +37,14 @@ std::vector<torch::Tensor> sparse_accumulation_active_dim_first_contiguous_backw
         long shift_active_x2 = idx_2_ptr[index] * inner_size;
         long shift_active_output = idx_output_ptr[index] * inner_size;
         float multiplier = multipliers_ptr[index];
-        float grad;
-        long shift_local = 0;
+        #pragma omp parallel for
         for (int index_first = 0; index_first < first_size; ++index_first) {
+            #pragma omp parallel for
             for (int index_second = 0; index_second < second_size; ++index_second) { 
-                grad = d_output_ptr[shift_active_output + shift_local] * multiplier;               
+                long shift_local = index_first * second_size + index_second;
+                float grad = d_output_ptr[shift_active_output + shift_local] * multiplier;               
                 d_X1_ptr[shift_active_x1 + shift_local] += grad * X2_ptr[shift_active_x2 + shift_local];
-                d_X2_ptr[shift_active_x2 + shift_local] += grad * X1_ptr[shift_active_x1 + shift_local];
-                ++shift_local;                    
+                d_X2_ptr[shift_active_x2 + shift_local] += grad * X1_ptr[shift_active_x1 + shift_local];                  
             }
         }
     }
@@ -80,11 +80,12 @@ torch::Tensor sparse_accumulation_active_dim_first_contiguous_forward(torch::Ten
         long shift_active_output = idx_output_ptr[index] * inner_size;
         float third = multipliers_ptr[index];
         
-        long shift_local = 0;
+        #pragma omp parallel for
         for (int index_first = 0; index_first < first_size; ++index_first) {
+            #pragma omp parallel for
             for (int index_second = 0; index_second < second_size; ++index_second) {                 
-                output_ptr[shift_active_output + shift_local] += X1_ptr[shift_active_x1 + shift_local] * X2_ptr[shift_active_x2 + shift_local] * third;
-                ++shift_local;                    
+                long shift_local = index_first * second_size + index_second;
+                output_ptr[shift_active_output + shift_local] += X1_ptr[shift_active_x1 + shift_local] * X2_ptr[shift_active_x2 + shift_local] * third;                    
             }
         }
     }

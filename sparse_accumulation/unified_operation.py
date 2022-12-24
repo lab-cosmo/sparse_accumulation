@@ -1,6 +1,9 @@
 import torch
 import sparse_accumulation_active_dim_last_cpp
-import sparse_accumulation_cuda
+try:
+    import sparse_accumulation_cuda
+except ModuleNotFoundError:  
+    pass  # the cuda version is not installed
 
 def check_all_contiguous(tensors):   
     for tensor in tensors:

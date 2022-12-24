@@ -9,7 +9,7 @@ from torch.utils import cpp_extension
 
 L_MAX = 8
 BATCH_SIZE = 1000
-N_FEATURES = 200
+N_FEATURES = 2000
 print(f"L_MAX={L_MAX}; BATCH_SIZE={BATCH_SIZE}; N_FEATURES={N_FEATURES}")
 print("preparing real life transformation rule")
 
@@ -91,6 +91,7 @@ def get_func_fixed_dim(func, active_dim):
 
 print("*************")
 print("CPU BENCHMARKS")
+print(f"Running on {torch.get_num_threads()} threads")
 print("*************")
 
 m1_aligned = m1_aligned.cpu() 

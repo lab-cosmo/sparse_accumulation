@@ -1,6 +1,7 @@
 #include <torch/extension.h>
 
 #include <iostream>
+#include <omp.h>
 using namespace torch::indexing;
 
 
@@ -33,28 +34,25 @@ std::vector<torch::Tensor> sparse_accumulation_active_dim_middle_contiguous_back
     
     long inner_size = second_size * d_output.sizes()[1];
     
-    float multiplier;
-    long shift_output;
-    long shift_X1;
-    long shift_X2;
-    long shift_first = 0;
-    float grad;
-    
+    #pragma omp parallel for
     for (int index_first = 0; index_first < first_size; ++index_first) {
         for (int index = 0; index < active_size; ++index) {
-            shift_output = idx_output_ptr[index] * second_size + shift_first;
-            shift_X1 = idx_1_ptr[index] * second_size + shift_first;
-            shift_X2 = idx_2_ptr[index] * second_size + shift_first;
+            long shift_first = index_first * inner_size;
+
+            long shift_output = idx_output_ptr[index] * second_size + shift_first;
+            long shift_X1 = idx_1_ptr[index] * second_size + shift_first;
+            long shift_X2 = idx_2_ptr[index] * second_size + shift_first;
             
-            multiplier = multipliers_ptr[index];
+            float multiplier = multipliers_ptr[index];
+
+            #pragma omp parallel for
             for (int index_second = 0; index_second < second_size; ++index_second) {
                 
-                grad = d_output_ptr[shift_output + index_second] * multiplier;               
+                float grad = d_output_ptr[shift_output + index_second] * multiplier;               
                 d_X1_ptr[shift_X1 + index_second] += grad * X2_ptr[shift_X2 + index_second];
                 d_X2_ptr[shift_X2 + index_second] += grad * X1_ptr[shift_X1 + index_second];
             }
         }
-        shift_first += inner_size;
     } 
     
     return {d_X1, d_X2};    
@@ -83,24 +81,21 @@ torch::Tensor sparse_accumulation_active_dim_middle_contiguous_forward(torch::Te
     
     long inner_size = second_size * output_size;
     
-    float multiplier;
-    long shift_output;
-    long shift_X1;
-    long shift_X2;
-    long shift_first = 0;
+    #pragma omp parallel for
     for (int index_first = 0; index_first < first_size; ++index_first) {
         for (int index = 0; index < active_size; ++index) {
-            shift_output = idx_output_ptr[index] * second_size + shift_first;
-            shift_X1 = idx_1_ptr[index] * second_size + shift_first;
-            shift_X2 = idx_2_ptr[index] * second_size + shift_first;
+            long shift_first = index_first * inner_size;
+
+            long shift_output = idx_output_ptr[index] * second_size + shift_first;
+            long shift_X1 = idx_1_ptr[index] * second_size + shift_first;
+            long shift_X2 = idx_2_ptr[index] * second_size + shift_first;
             
-            multiplier = multipliers_ptr[index];
+            float multiplier = multipliers_ptr[index];
+            #pragma omp parallel for
             for (int index_second = 0; index_second < second_size; ++index_second) { 
                 output_ptr[shift_output + index_second] += X1_ptr[shift_X1 + index_second] * X2_ptr[shift_X2 + index_second] * multiplier;
             }
         }
-        shift_first += inner_size;
-        
     }    
     return output;    
 }
