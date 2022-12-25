@@ -32,21 +32,31 @@ void _sparse_accumulation_active_dim_middle_contiguous_backward(
     long active_size = idx_output.sizes()[0];
     long first_size = X1.sizes()[0];
     long second_size = X1.sizes()[2];
-    
-    long inner_size = second_size * d_output.sizes()[1];
+
+    long output_active_dim = d_output.sizes()[1];
+    long X1_active_dim = X1.sizes()[1];
+    long X2_active_dim = X2.sizes()[1];
+
+    long X1_inner_dimensions = X1_active_dim * second_size;
+    long X2_inner_dimensions = X2_active_dim * second_size;
+    long output_inner_dimensions = output_active_dim * second_size;
     
     #pragma omp parallel for
     for (int index_first = 0; index_first < first_size; ++index_first) {
-        for (int index = 0; index < active_size; ++index) {
-            long shift_first = index_first * inner_size;
 
-            long shift_output = idx_output_ptr[index] * second_size + shift_first;
-            long shift_X1 = idx_1_ptr[index] * second_size + shift_first;
-            long shift_X2 = idx_2_ptr[index] * second_size + shift_first;
+        long shift_X1_first = X1_inner_dimensions * index_first;
+        long shift_X2_first = X2_inner_dimensions * index_first;
+        long shift_output_first = output_inner_dimensions * index_first;
+
+        for (int index = 0; index < active_size; ++index) {
+
+            long shift_output = idx_output_ptr[index] * second_size + shift_output_first;
+            long shift_X1 = idx_1_ptr[index] * second_size + shift_X1_first;
+            long shift_X2 = idx_2_ptr[index] * second_size + shift_X2_first;
             
             scalar_t multiplier = multipliers_ptr[index];
 
-            #pragma omp parallel for
+            // #pragma omp parallel for  // In most cases, this slows the code down significantly
             for (int index_second = 0; index_second < second_size; ++index_second) {
                 
                 scalar_t grad = d_output_ptr[shift_output + index_second] * multiplier;               
@@ -81,20 +91,30 @@ void _sparse_accumulation_active_dim_middle_contiguous_forward(
     long active_size = idx_output.sizes()[0];
     long first_size = X1.sizes()[0];
     long second_size = X1.sizes()[2];
-    
-    long inner_size = second_size * output_size;
-    
+
+    long output_active_dim = output.sizes()[1];
+    long X1_active_dim = X1.sizes()[1];
+    long X2_active_dim = X2.sizes()[1];
+
+    long X1_inner_dimensions = X1_active_dim * second_size;
+    long X2_inner_dimensions = X2_active_dim * second_size;
+    long output_inner_dimensions = output_active_dim * second_size;
+
     #pragma omp parallel for
     for (int index_first = 0; index_first < first_size; ++index_first) {
-        for (int index = 0; index < active_size; ++index) {
-            long shift_first = index_first * inner_size;
 
-            long shift_output = idx_output_ptr[index] * second_size + shift_first;
-            long shift_X1 = idx_1_ptr[index] * second_size + shift_first;
-            long shift_X2 = idx_2_ptr[index] * second_size + shift_first;
+        long shift_X1_first = X1_inner_dimensions * index_first;
+        long shift_X2_first = X2_inner_dimensions * index_first;
+        long shift_output_first = output_inner_dimensions * index_first;
+
+        for (int index = 0; index < active_size; ++index) {
+
+            long shift_output = idx_output_ptr[index] * second_size + shift_output_first;
+            long shift_X1 = idx_1_ptr[index] * second_size + shift_X1_first;
+            long shift_X2 = idx_2_ptr[index] * second_size + shift_X2_first;
             
             scalar_t multiplier = multipliers_ptr[index];
-            #pragma omp parallel for
+            // #pragma omp parallel for  // In most cases, this slows the code down significantly
             for (int index_second = 0; index_second < second_size; ++index_second) { 
                 output_ptr[shift_output + index_second] += X1_ptr[shift_X1 + index_second] * X2_ptr[shift_X2 + index_second] * multiplier;
             }

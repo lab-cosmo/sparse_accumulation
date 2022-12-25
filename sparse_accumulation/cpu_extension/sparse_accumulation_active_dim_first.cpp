@@ -41,7 +41,7 @@ void _sparse_accumulation_active_dim_first_contiguous_backward(
         scalar_t multiplier = multipliers_ptr[index];
         #pragma omp parallel for
         for (int index_first = 0; index_first < first_size; ++index_first) {
-            #pragma omp parallel for
+            // #pragma omp parallel for  // This makes little difference
             for (int index_second = 0; index_second < second_size; ++index_second) { 
                 long shift_local = index_first * second_size + index_second;
                 scalar_t grad = d_output_ptr[shift_active_output + shift_local] * multiplier;               
@@ -86,7 +86,7 @@ void _sparse_accumulation_active_dim_first_contiguous_forward(
         
         #pragma omp parallel for
         for (int index_first = 0; index_first < first_size; ++index_first) {
-            #pragma omp parallel for
+            // #pragma omp parallel for  // This makes little difference
             for (int index_second = 0; index_second < second_size; ++index_second) {                 
                 long shift_local = index_first * second_size + index_second;
                 output_ptr[shift_active_output + shift_local] += X1_ptr[shift_active_x1 + shift_local] * X2_ptr[shift_active_x2 + shift_local] * third;                    

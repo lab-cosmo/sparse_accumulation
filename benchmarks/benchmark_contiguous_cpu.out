@@ -1,7 +1,6 @@
 L_MAX=8; BATCH_SIZE=1000; N_FEATURES=2000
 preparing real life transformation rule
 transformation rule is computed
-
 *************
 CPU BENCHMARKS
 Running on 72 threads
@@ -9,28 +8,28 @@ Running on 72 threads
 
 ***forward***
 
-python loops; active dim 0; forward; cpu:  0.254318184322781
-torch index_add_; active dim 0; forward; cpu:  0.2879977756076389
-cpp; active dim 0; forward; cpu:  0.06368973520067003
+python loops; active dim 0; forward; cpu:  0.287917349073622
+torch index_add_; active dim 0; forward; cpu:  0.2882208559248183
+cpp; active dim 0; forward; cpu:  0.06418042712741429
 
-python loops; active dim 1; forward; cpu:  0.1305353906419542
-torch index_add_; active dim 1; forward; cpu:  0.21892624431186253
-cpp; active dim 1; forward; cpu:  0.02140233251783583
+python loops; active dim 1; forward; cpu:  0.10099238819546169
+torch index_add_; active dim 1; forward; cpu:  0.19646917449103463
+cpp; active dim 1; forward; cpu:  0.015409390131632486
 
-python loops; active dim 2; forward; cpu: 0.7345597214168973
-torch index_add_; active dim 2; forward; cpu:  0.5568482875823975
-cpp; active dim 2; forward; cpu  0.02353511916266547
+python loops; active dim 2; forward; cpu: 1.13313627243042
+torch index_add_; active dim 2; forward; cpu:  0.9349785645802816
+cpp; active dim 2; forward; cpu  0.029056257671780057
 
 ***backward***
 
-python loops; active dim 0; backward; cpu  8.00793022579617
-torch index_add_; active dim 0; backward; cpu  0.798795117272271
-cpp; active dim 0; backward; cpu  0.14589950773451063
+python loops; active dim 0; backward; cpu  8.56085040834215
+torch index_add_; active dim 0; backward; cpu  0.8768206967247857
+cpp; active dim 0; backward; cpu  0.14745905664232042
 
-python loops; active dim 1; backward; cpu  9.47970363828871
-torch index_add_; active dim 1; backward; cpu  1.1154681576622858
-cpp; active dim 1; backward; cpu  0.050841066572401256
+python loops; active dim 1; backward; cpu  12.528574811087715
+torch index_add_; active dim 1; backward; cpu  1.3579767015245225
+cpp; active dim 1; backward; cpu  0.11550368203057183
 
-python loops; active dim 2; backward; cpu  1.3680071830749512
-torch index_add_; active dim 2; backward; cpu  1.4107410377926297
-cpp; active dim 2; backward; cpu  0.060111814075046115
+python loops; active dim 2; backward; cpu  1.43605547481113
+torch index_add_; active dim 2; backward; cpu  1.3703345987531874
+cpp; active dim 2; backward; cpu  0.05493460761176215

@@ -39,7 +39,7 @@ void _sparse_accumulation_active_dim_last_contiguous_backward(
 
     #pragma omp parallel for
     for (int index_first = 0; index_first < first_size; ++index_first){
-        #pragma omp parallel for
+        // #pragma omp parallel for  // This makes little difference
         for (int index_second = 0; index_second < second_size; ++index_second) {
             long shift_number = index_first * second_size + index_second;
             long shift_output = shift_number * output_active_dim;
@@ -88,7 +88,7 @@ void _sparse_accumulation_active_dim_last_contiguous_forward(
     
     #pragma omp parallel for
     for (int index_first = 0; index_first < first_size; ++index_first){
-        #pragma omp parallel for
+        // #pragma omp parallel for  // This makes little difference
         for (int index_second = 0; index_second < second_size; ++index_second) {
             long shift_number = index_first * second_size + index_second;
             long shift_output = shift_number * output_active_dim;
