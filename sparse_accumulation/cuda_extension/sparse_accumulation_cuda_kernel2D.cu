@@ -218,8 +218,8 @@ __global__ void sparse_accumulation_cuda_backward_kernel(
         }
 
         int z_output, z_X1, z_X2;
-        //scalar_t now = 0;
-        int z_old = 0;
+        // scalar_t now = 0;
+        // int z_old = 0;
         scalar_t grad_multi;
         for (int z = 0 ; z < nz ; ++z){
             z_output = buffer_idx_output[z];

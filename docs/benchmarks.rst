@@ -1,14 +1,14 @@
 Benchmarks
 ==========
 
-First benchmark output
+CPU benchmarks
 ----------------------
 
-.. include:: ../benchmarks/benchmark_contiguous.out
+.. include:: ../benchmarks/benchmark_contiguous_cpu.out
    :literal:
 
-Second benchmark output
+GPU benchmarks
 -----------------------
 
-.. include:: ../benchmarks/benchmark_contiguous_tmp.out
+.. include:: ../benchmarks/benchmark_contiguous_gpu.out
    :literal:
