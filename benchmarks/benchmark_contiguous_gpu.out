@@ -1,0 +1,32 @@
+ninja: no work to do.
+L_MAX=8; BATCH_SIZE=1000; N_FEATURES=2000
+preparing real life transformation rule
+transformation rule is computed
+
+*************
+GPU benchmarks
+*************
+
+***forward***
+
+python loops; active dim 0; forward; cuda:  0.06442029486762153
+torch index_add_; active dim 0; forward; cuda:  0.04863210678100585
+
+python loops; active dim 1; forward; cuda:  0.07500541941324869
+torch index_add_; active dim 1; forward; cuda:  0.04478669526841905
+
+python loops; active dim 2; forward; cuda:  0.3839471096462673
+torch index_add_; active dim 2; forward; cuda:  0.04732361221313477
+CUDA kernel; active dim 2; forward; cuda:  0.002660088883505928
+
+***backward***
+
+python loops; active dim 0; backward; cuda:  1.1864166802300347
+torch index_add_; active dim 0; backward; cuda:  0.09936237504747178
+
+python loops; active dim 1; backward; cuda:  1.5248256022135418
+torch index_add_; active dim 1; backward; cuda:  0.09908599090576171
+
+python loops; active dim 2; backward; cuda:  0.7663369886610244
+torch index_add_; active dim 2; backward; cuda:  0.7663484971788194
+CUDA kernel; active dim 2; backward; cuda:  0.0068883590698242195

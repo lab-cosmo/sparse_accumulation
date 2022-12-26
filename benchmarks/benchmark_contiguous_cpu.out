@@ -1,0 +1,35 @@
+L_MAX=8; BATCH_SIZE=1000; N_FEATURES=2000
+preparing real life transformation rule
+transformation rule is computed
+*************
+CPU BENCHMARKS
+Running on 72 threads
+*************
+
+***forward***
+
+python loops; active dim 0; forward; cpu:  0.287917349073622
+torch index_add_; active dim 0; forward; cpu:  0.2882208559248183
+cpp; active dim 0; forward; cpu:  0.06418042712741429
+
+python loops; active dim 1; forward; cpu:  0.10099238819546169
+torch index_add_; active dim 1; forward; cpu:  0.19646917449103463
+cpp; active dim 1; forward; cpu:  0.015409390131632486
+
+python loops; active dim 2; forward; cpu: 1.13313627243042
+torch index_add_; active dim 2; forward; cpu:  0.9349785645802816
+cpp; active dim 2; forward; cpu  0.029056257671780057
+
+***backward***
+
+python loops; active dim 0; backward; cpu  8.56085040834215
+torch index_add_; active dim 0; backward; cpu  0.8768206967247857
+cpp; active dim 0; backward; cpu  0.14745905664232042
+
+python loops; active dim 1; backward; cpu  12.528574811087715
+torch index_add_; active dim 1; backward; cpu  1.3579767015245225
+cpp; active dim 1; backward; cpu  0.11550368203057183
+
+python loops; active dim 2; backward; cpu  1.43605547481113
+torch index_add_; active dim 2; backward; cpu  1.3703345987531874
+cpp; active dim 2; backward; cpu  0.05493460761176215

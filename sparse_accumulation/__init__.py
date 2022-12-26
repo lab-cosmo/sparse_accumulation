@@ -1,2 +1,3 @@
 from .unified_operation import accumulate
 from .clebsch_gordan import get_cg_transformation_rule, CGCalculatorSingle
+from .other_operations import accumulate_active_dim_middle, accumulate_active_dim_first

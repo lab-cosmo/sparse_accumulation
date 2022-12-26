@@ -1,28 +1,30 @@
 #include <torch/extension.h>
 
 #include <iostream>
+#include <omp.h>
 using namespace torch::indexing;
 
 
-std::vector<torch::Tensor> sparse_accumulation_active_dim_middle_contiguous_backward(torch::Tensor d_output,
-                                                        torch::Tensor X1,
-                                                        torch::Tensor X2,
-                                                        torch::Tensor idx_output,
-                                                        torch::Tensor idx_1,
-                                                        torch::Tensor idx_2, 
-                                                        torch::Tensor multipliers){
+template<typename scalar_t>
+void _sparse_accumulation_active_dim_middle_contiguous_backward(
+    torch::Tensor d_X1,
+    torch::Tensor d_X2,
+    torch::Tensor d_output,
+    torch::Tensor X1,
+    torch::Tensor X2,
+    torch::Tensor idx_output,
+    torch::Tensor idx_1,
+    torch::Tensor idx_2, 
+    torch::Tensor multipliers) {
     
-    auto d_X1 = torch::zeros_like(X1);
-    auto d_X2 = torch::zeros_like(X2);
+    scalar_t* d_X1_ptr = d_X1.data_ptr<scalar_t>();
+    scalar_t* d_X2_ptr = d_X2.data_ptr<scalar_t>();
+    scalar_t* d_output_ptr = d_output.data_ptr<scalar_t>();
     
-    float* d_X1_ptr = d_X1.data_ptr<float>();
-    float* d_X2_ptr = d_X2.data_ptr<float>();
-    float* d_output_ptr = d_output.data_ptr<float>();
-    
-    float* X1_ptr = X1.data_ptr<float>();
-    float* X2_ptr = X2.data_ptr<float>();
+    scalar_t* X1_ptr = X1.data_ptr<scalar_t>();
+    scalar_t* X2_ptr = X2.data_ptr<scalar_t>();
    
-    float* multipliers_ptr = multipliers.data_ptr<float>();
+    scalar_t* multipliers_ptr = multipliers.data_ptr<scalar_t>();
     long* idx_1_ptr = idx_1.data_ptr<long>();
     long* idx_2_ptr = idx_2.data_ptr<long>();
     long* idx_output_ptr = idx_output.data_ptr<long>();
@@ -30,49 +32,58 @@ std::vector<torch::Tensor> sparse_accumulation_active_dim_middle_contiguous_back
     long active_size = idx_output.sizes()[0];
     long first_size = X1.sizes()[0];
     long second_size = X1.sizes()[2];
+
+    long output_active_dim = d_output.sizes()[1];
+    long X1_active_dim = X1.sizes()[1];
+    long X2_active_dim = X2.sizes()[1];
+
+    long X1_inner_dimensions = X1_active_dim * second_size;
+    long X2_inner_dimensions = X2_active_dim * second_size;
+    long output_inner_dimensions = output_active_dim * second_size;
     
-    long inner_size = second_size * d_output.sizes()[1];
-    
-    float multiplier;
-    long shift_output;
-    long shift_X1;
-    long shift_X2;
-    long shift_first = 0;
-    float grad;
-    
+    #pragma omp parallel for
     for (int index_first = 0; index_first < first_size; ++index_first) {
+
+        long shift_X1_first = X1_inner_dimensions * index_first;
+        long shift_X2_first = X2_inner_dimensions * index_first;
+        long shift_output_first = output_inner_dimensions * index_first;
+
         for (int index = 0; index < active_size; ++index) {
-            shift_output = idx_output_ptr[index] * second_size + shift_first;
-            shift_X1 = idx_1_ptr[index] * second_size + shift_first;
-            shift_X2 = idx_2_ptr[index] * second_size + shift_first;
+
+            long shift_output = idx_output_ptr[index] * second_size + shift_output_first;
+            long shift_X1 = idx_1_ptr[index] * second_size + shift_X1_first;
+            long shift_X2 = idx_2_ptr[index] * second_size + shift_X2_first;
             
-            multiplier = multipliers_ptr[index];
+            scalar_t multiplier = multipliers_ptr[index];
+
+            // #pragma omp parallel for  // In most cases, this slows the code down significantly
             for (int index_second = 0; index_second < second_size; ++index_second) {
                 
-                grad = d_output_ptr[shift_output + index_second] * multiplier;               
+                scalar_t grad = d_output_ptr[shift_output + index_second] * multiplier;               
                 d_X1_ptr[shift_X1 + index_second] += grad * X2_ptr[shift_X2 + index_second];
                 d_X2_ptr[shift_X2 + index_second] += grad * X1_ptr[shift_X1 + index_second];
             }
         }
-        shift_first += inner_size;
     } 
-    
-    return {d_X1, d_X2};    
+
 }
 
-torch::Tensor sparse_accumulation_active_dim_middle_contiguous_forward(torch::Tensor X1,
-                                  torch::Tensor X2,
-                                  torch::Tensor idx_output,
-                                  int output_size,
-                                  torch::Tensor idx_1,
-                                  torch::Tensor idx_2,
-                                  torch::Tensor multipliers){
+
+template<typename scalar_t>
+void _sparse_accumulation_active_dim_middle_contiguous_forward(
+    torch::Tensor output,
+    torch::Tensor X1,
+    torch::Tensor X2,
+    torch::Tensor idx_output,
+    int output_size,
+    torch::Tensor idx_1,
+    torch::Tensor idx_2,
+    torch::Tensor multipliers) {
     
-    auto output = torch::zeros({X1.sizes()[0], output_size, X1.sizes()[2]}, torch::kF32);    
-    float* X1_ptr = X1.data_ptr<float>();
-    float* X2_ptr = X2.data_ptr<float>();
-    float* output_ptr = output.data_ptr<float>();
-    float* multipliers_ptr = multipliers.data_ptr<float>();
+    scalar_t* X1_ptr = X1.data_ptr<scalar_t>();
+    scalar_t* X2_ptr = X2.data_ptr<scalar_t>();
+    scalar_t* output_ptr = output.data_ptr<scalar_t>();
+    scalar_t* multipliers_ptr = multipliers.data_ptr<scalar_t>();
     long* idx_1_ptr = idx_1.data_ptr<long>();
     long* idx_2_ptr = idx_2.data_ptr<long>();
     long* idx_output_ptr = idx_output.data_ptr<long>();
@@ -80,29 +91,96 @@ torch::Tensor sparse_accumulation_active_dim_middle_contiguous_forward(torch::Te
     long active_size = idx_output.sizes()[0];
     long first_size = X1.sizes()[0];
     long second_size = X1.sizes()[2];
-    
-    long inner_size = second_size * output_size;
-    
-    float multiplier;
-    long shift_output;
-    long shift_X1;
-    long shift_X2;
-    long shift_first = 0;
+
+    long output_active_dim = output.sizes()[1];
+    long X1_active_dim = X1.sizes()[1];
+    long X2_active_dim = X2.sizes()[1];
+
+    long X1_inner_dimensions = X1_active_dim * second_size;
+    long X2_inner_dimensions = X2_active_dim * second_size;
+    long output_inner_dimensions = output_active_dim * second_size;
+
+    #pragma omp parallel for
     for (int index_first = 0; index_first < first_size; ++index_first) {
+
+        long shift_X1_first = X1_inner_dimensions * index_first;
+        long shift_X2_first = X2_inner_dimensions * index_first;
+        long shift_output_first = output_inner_dimensions * index_first;
+
         for (int index = 0; index < active_size; ++index) {
-            shift_output = idx_output_ptr[index] * second_size + shift_first;
-            shift_X1 = idx_1_ptr[index] * second_size + shift_first;
-            shift_X2 = idx_2_ptr[index] * second_size + shift_first;
+
+            long shift_output = idx_output_ptr[index] * second_size + shift_output_first;
+            long shift_X1 = idx_1_ptr[index] * second_size + shift_X1_first;
+            long shift_X2 = idx_2_ptr[index] * second_size + shift_X2_first;
             
-            multiplier = multipliers_ptr[index];
+            scalar_t multiplier = multipliers_ptr[index];
+            // #pragma omp parallel for  // In most cases, this slows the code down significantly
             for (int index_second = 0; index_second < second_size; ++index_second) { 
                 output_ptr[shift_output + index_second] += X1_ptr[shift_X1 + index_second] * X2_ptr[shift_X2 + index_second] * multiplier;
             }
         }
-        shift_first += inner_size;
-        
     }    
-    return output;    
+        
+}
+
+
+std::vector<torch::Tensor> sparse_accumulation_active_dim_middle_contiguous_backward(
+    torch::Tensor d_output,
+    torch::Tensor X1,
+    torch::Tensor X2,
+    torch::Tensor idx_output,
+    torch::Tensor idx_1,
+    torch::Tensor idx_2, 
+    torch::Tensor multipliers
+) {
+
+    auto d_X1 = torch::zeros_like(X1);
+    auto d_X2 = torch::zeros_like(X2);
+
+    AT_DISPATCH_FLOATING_TYPES(X1.type(), "sparse_accumulation_active_dim_middle_contiguous_backward", ([&] {
+        _sparse_accumulation_active_dim_middle_contiguous_backward<scalar_t>(
+            d_X1,
+            d_X2,
+            d_output,
+            X1,
+            X2,
+            idx_output,
+            idx_1,
+            idx_2, 
+            multipliers
+        );
+    }));
+
+    return {d_X1, d_X2};
+}
+
+
+torch::Tensor sparse_accumulation_active_dim_middle_contiguous_forward(
+    torch::Tensor X1,
+    torch::Tensor X2,
+    torch::Tensor idx_output,
+    int output_size,
+    torch::Tensor idx_1,
+    torch::Tensor idx_2,
+    torch::Tensor multipliers
+) {
+
+    auto output = torch::zeros({X1.sizes()[0], output_size, X1.sizes()[2]}, X1.options());
+
+    AT_DISPATCH_FLOATING_TYPES(X1.type(), "sparse_accumulation_active_dim_middle_contiguous_forward", ([&] {
+        _sparse_accumulation_active_dim_middle_contiguous_forward<scalar_t>(
+            output,
+            X1,
+            X2,
+            idx_output,
+            output_size,
+            idx_1,
+            idx_2,
+            multipliers
+        );
+    }));
+
+    return output;
 }
 
 

@@ -6,6 +6,10 @@ accumulate
 
 .. autofunction:: accumulate
 
+.. autofunction:: accumulate_active_dim_middle
+
+.. autofunction:: accumulate_active_dim_first
+
 get_cg_transformation_rule
 ==========================
 
