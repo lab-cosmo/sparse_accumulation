@@ -9,7 +9,7 @@ from torch.utils import cpp_extension
 
 cpp_extension.load(
     name="sparse_accumulation_cuda",
-    sources=["sparse_accumulation/cuda_extension/sparse_accumulation_cuda_kernel2D.cu"],
+    sources=["../sparse_accumulation/cuda_extension/sparse_accumulation_cuda_kernel2D.cu"],
     is_python_module=False,
     extra_cuda_cflags=None,
     verbose=True,
@@ -19,7 +19,7 @@ import sparse_accumulation_cuda
 
 L_MAX = 8
 BATCH_SIZE = 1000
-N_FEATURES = 2000
+N_FEATURES = 100
 print(f"L_MAX={L_MAX}; BATCH_SIZE={BATCH_SIZE}; N_FEATURES={N_FEATURES}")
 print("preparing real life transformation rule")
 
