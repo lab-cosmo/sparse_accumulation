@@ -3,6 +3,7 @@ requires = ["setuptools", "wheel", "torch"]
 
 [project]
 name = "sparse_accumulation"
+version = "0.0.0"
 description = "A package that contains significantly optimized CPU and GPU PyTorch extensions for the sparse accumulation operation"
 authors = [
     {name = "Sergey Pozdnyakov"},
@@ -14,12 +15,10 @@ authors = [
 ]
 readme = "README.rst"
 requires-python = ">=3.8"
-license = {}
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
     "Environment :: Console",
     "Intended Audience :: Science/Research",
-    "License :: ",
     "Natural Language :: English",
     "Programming Language :: Python :: 3",
     "Programming Language :: C++",
