@@ -1,2 +1,48 @@
 [build-system]
 requires = ["setuptools", "wheel", "torch"]
+
+[project]
+name = "sparse_accumulation"
+description = "A package that contains significantly optimized CPU and GPU PyTorch extensions for the sparse accumulation operation"
+authors = [
+    {name = "Sergey Pozdnyakov"},
+    {name = "Davide Tisi"},
+    {name = "Prashanth Kanduri"},
+    {name = "Filippo Bigi"},
+    {name = "Henrique Mendonça"},
+    {name = "Guillaume Fraux"},
+]
+readme = "README.rst"
+requires-python = ">=3.8"
+license = {}
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "License :: ",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: C++",
+    "Topic :: Scientific/Engineering",
+]
+dependencies = [
+    "numpy",
+    "torch",
+]
+
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "os",
+]
+
+
+[project.urls]
+homepage = "https://lab-cosmo.github.io/sparse_accumulation/"
+documentation = "https://lab-cosmo.github.io/sparse_accumulation/"
+repository = "https://github.com/lab-cosmo/sparse_accumulation"
+
+
+[tool.setuptools.packages.find]
+where = ["sparse_accumulation"]
