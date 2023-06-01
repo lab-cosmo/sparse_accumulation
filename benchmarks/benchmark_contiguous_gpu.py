@@ -18,8 +18,8 @@ cpp_extension.load(
 import sparse_accumulation_cuda
 
 L_MAX = 8
-BATCH_SIZE = 1000
-N_FEATURES = 100
+BATCH_SIZE = 2000
+N_FEATURES = 200
 print(f"L_MAX={L_MAX}; BATCH_SIZE={BATCH_SIZE}; N_FEATURES={N_FEATURES}")
 print("preparing real life transformation rule")
 
