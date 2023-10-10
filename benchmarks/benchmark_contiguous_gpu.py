@@ -4,7 +4,7 @@ import torch
 from sparse_accumulation.clebsch_gordan import get_real_clebsch_gordan, ClebschGordan
 from sparse_accumulation.reference_implementations import sparse_accumulation_loops, sparse_accumulation_index_add
 from sparse_accumulation.reference_implementations import sparse_accumulation_matrix_multiply, sparse_accumulation_sparse_matrix_multiply, sparse_accumulation_sparse_matrix_multiply_optimized
-
+from e3nn import o3
 from sparse_accumulation.reference_implementations import get_transformation, get_transformation_sparse
 
 import numpy as np
@@ -55,6 +55,8 @@ transformation = get_transformation(mu_aligned, 2 * L_MAX + 1, 2 * L_MAX + 1, 2 
 transformation_sparse = get_transformation_sparse(mu_aligned, 2 * L_MAX + 1, 2 * L_MAX + 1, 2 * L_MAX + 1,
                                     m1_aligned, m2_aligned, multipliers)                                
 
+num_total = BATCH_SIZE * N_FEATURES
+e3nn_transformation = o3.ElementwiseTensorProduct(f"{num_total}x{L_MAX}e", f"{num_total}x{L_MAX}e", [f"{L_MAX}e"])
 print("transformation rule is computed")
 
 
@@ -89,6 +91,7 @@ def benchmark_forward_cpu(BATCH_SIZE, N_FEATURES, active_dim, function, n_trials
     return times
 
 
+
 def benchmark_forward_gpu(BATCH_SIZE, N_FEATURES, active_dim, function, n_trials):
     X1, X2 = get_input(BATCH_SIZE, N_FEATURES, active_dim, 'cuda')
     times = []
@@ -119,6 +122,29 @@ def benchmark_backward_cpu(BATCH_SIZE, N_FEATURES, active_dim, function, n_trial
         times.append(time.time() - begin)
     return np.array(times)
 
+
+def benchmark_forward_e3nn_gpu(BATCH_SIZE, N_FEATURES, n_trials):
+    X1, X2 = get_input(BATCH_SIZE, N_FEATURES, 2, "cuda")
+    X1 = X1.reshape(-1)
+    X2 = X2.reshape(-1)
+    
+    times = []
+    torch.cuda.synchronize("cuda")
+    starter, ender = torch.cuda.Event(enable_timing=True), torch.cuda.Event(
+        enable_timing=True
+    )
+
+    for _ in range(n_trials):
+        starter.record()
+        output = e3nn_transformation(X1, X2)
+        ender.record()
+        torch.cuda.synchronize("cuda")
+        delta_time = starter.elapsed_time(ender)
+        times.append(delta_time / 1000.0)
+    return times
+
+    
+    
 def benchmark_forward_matrix_multiply_gpu(BATCH_SIZE, N_FEATURES, active_dim, n_trials):
     X1, X2 = get_input(BATCH_SIZE, N_FEATURES, active_dim, "cuda")
     times = []
@@ -177,6 +203,36 @@ def benchmark_forward_sparse_matrix_multiply_optimized_gpu(BATCH_SIZE, N_FEATURE
         times.append(delta_time / 1000.0)
     #print(output.shape)
     return times
+
+
+def benchmark_backward_e3nn_gpu(BATCH_SIZE, N_FEATURES, n_trials):
+    X1, X2 = get_input(BATCH_SIZE, N_FEATURES, 2, "cuda")
+    X1 = X1.reshape(-1)
+    X2 = X2.reshape(-1)
+    X1.requires_grad = True
+    X2.requires_grad = True
+    
+    times = []
+    torch.cuda.synchronize("cuda")
+    starter, ender = torch.cuda.Event(enable_timing=True), torch.cuda.Event(
+        enable_timing=True
+    )
+
+    for _ in range(n_trials):
+        starter.record()
+        
+        output = e3nn_transformation(X1, X2)
+        torch.cuda.synchronize("cuda")
+        starter.record()
+        output.backward(gradient=torch.ones_like(output))
+        
+        ender.record()
+        torch.cuda.synchronize("cuda")
+        delta_time = starter.elapsed_time(ender)
+        times.append(delta_time / 1000.0)
+        
+    return times
+
 
 def benchmark_backward_matrix_multiply_gpu(BATCH_SIZE, N_FEATURES, active_dim, n_trials):
     X1, X2 = get_input(BATCH_SIZE, N_FEATURES, active_dim, "cuda")
@@ -265,6 +321,7 @@ mu_aligned = mu_aligned.cuda()
 multipliers = multipliers.cuda()
 transformation = transformation.cuda()
 transformation_sparse = transformation_sparse.cuda()
+e3nn_transformation = e3nn_transformation.cuda()
 print()
 print("***forward***")
 print()
@@ -301,6 +358,9 @@ print("sparse matrix multiply; active dim 2; forward; cuda: ", np.mean(times[1:]
 times = benchmark_forward_sparse_matrix_multiply_optimized_gpu(BATCH_SIZE, N_FEATURES, 0, 10)
 print("sparse matrix optimized multiply; active dim 0; forward; cuda: ", np.mean(times[1:]))
 
+times = benchmark_forward_e3nn_gpu(BATCH_SIZE, N_FEATURES, 10)
+print("e3nn: ", np.mean(times[1:]))
+
 times = benchmark_forward_gpu(BATCH_SIZE, N_FEATURES, 2, 
                           sparse_accumulation_cuda.forward, 10)
 print("CUDA kernel; active dim 2; forward; cuda: ", np.mean(times[1:]))
@@ -334,6 +394,11 @@ print("torch index_add_; active dim 2; backward; cuda: ", np.mean(times[1:]))
 
 times = benchmark_backward_matrix_multiply_gpu(BATCH_SIZE, N_FEATURES, 2, 10)
 print("dense matrix multiply: ", np.mean(times[1:]))
+
+
+times = benchmark_backward_e3nn_gpu(BATCH_SIZE, N_FEATURES, 10)
+print("e3nn backward: ", np.mean(times[1:]))
+
 
 times = benchmark_backward_gpu_cuda(BATCH_SIZE, N_FEATURES, 2, 
                           sparse_accumulation_cuda.backward, 10)
